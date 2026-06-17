@@ -17,9 +17,6 @@ import { changeAppLanguage, getCurrentLanguage } from '../i18n';
 import { AppLanguage, SUPPORTED_LANGUAGES } from '../i18n/languages';
 
 import { colors } from '../theme/colors';
-import LunarReminderCard from '../components/LunarReminderCard';
-import DailyPracticeReminderCard from '../components/DailyPracticeReminderCard';
-
 export default function SettingsScreen() {
   const { t } = useTranslation();
 
@@ -46,9 +43,6 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>{t('settings.title')}</Text>
 
-        <LunarReminderCard />
-        <DailyPracticeReminderCard />
-
         <Pressable
           style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
           onPress={() => setLanguageModalVisible(true)}
@@ -65,20 +59,6 @@ export default function SettingsScreen() {
             <Text style={styles.currentLanguage}>{selectedLanguageName} ›</Text>
           </View>
         </Pressable>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>🔒 {t('settings.privacy')}</Text>
-
-          <Text style={styles.cardText}>
-            {t('settings.privacyDescription')}
-          </Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>ℹ️ {t('settings.information')}</Text>
-
-          <Text style={styles.cardText}>{t('settings.version')}</Text>
-        </View>
       </ScrollView>
 
       <Modal

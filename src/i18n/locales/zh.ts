@@ -19,6 +19,8 @@ import chantCounter
   from './chantCounter.zh';
   import practiceJourney
   from './practiceJourney.zh';
+  import astrologyHome
+  from './astrologyHome.zh';
 const zh = {
   common: {
     cancel: '取消',
@@ -992,7 +994,8 @@ meditation: {
   premiumContent,
   smartFeatures,
   chantCounter,
-  practiceJourney
+  practiceJourney,
+  astrologyHome
 } as const;
 
 export default zh;

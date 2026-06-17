@@ -19,6 +19,8 @@ import chantCounter
   from './chantCounter.ko';
   import practiceJourney
   from './practiceJourney.ko';
+  import astrologyHome
+  from './astrologyHome.ko';
 const ko = {
   common: {
     cancel: '취소',
@@ -992,7 +994,8 @@ meditation: {
   premiumContent,
   smartFeatures,
   chantCounter,
-  practiceJourney
+  practiceJourney,
+  astrologyHome
 } as const;
 
 export default ko;

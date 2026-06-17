@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 import {
@@ -27,35 +26,20 @@ import SmallBannerAd
 import HomeScreen
   from '../screens/HomeScreen';
 
-import TempleScreen
-  from '../screens/TempleScreen';
+import LunarCalendarScreen
+  from '../screens/LunarCalendarScreen';
 
-import MeditationScreen
-  from '../screens/MeditationScreen';
+import BaziChartScreen
+  from '../screens/BaziChartScreen';
 
-import PrayerScreen
-  from '../screens/PrayerScreen';
-
-import AudioLibraryScreen
-  from '../screens/AudioLibraryScreen';
+import ZiweiChartScreen
+  from '../screens/ZiweiChartScreen';
 
 import SettingsScreen
   from '../screens/SettingsScreen';
 
-import LunarCalendarScreen
-  from '../screens/LunarCalendarScreen';
-
-import SpiritualAudioScreen
-  from '../screens/SpiritualAudioScreen';
-
-import FortuneStickScreen
-  from '../screens/FortuneStickScreen';
-
 import HoroscopeScreen
   from '../screens/HoroscopeScreen';
-
-import BaziChartScreen
-  from '../screens/BaziChartScreen';
 
 import BaziHistoryScreen
   from '../screens/BaziHistoryScreen';
@@ -63,51 +47,16 @@ import BaziHistoryScreen
 import BaziStage4Screen
   from '../screens/BaziStage4Screen';
 
-import ZiweiChartScreen
-  from '../screens/ZiweiChartScreen';
-
-import DailyRitualScreen
-  from '../screens/DailyRitualScreen';
-
-import PeaceJournalScreen
-  from '../screens/PeaceJournalScreen';
+import FortuneStickScreen
+  from '../screens/FortuneStickScreen';
 
 import BuddhistCalendarScreen
   from '../screens/BuddhistCalendarScreen';
 
-import AltarCustomizationScreen
-  from '../screens/AltarCustomizationScreen';
-
-import ChantCounterScreen
-  from '../screens/ChantCounterScreen';
-
-import PracticeJourneyScreen
-  from '../screens/PracticeJourneyScreen';
-
-import {
-  colors,
-} from '../theme/colors';
-
 export type RootTabParamList = {
   Home: undefined;
 
-  Temple: undefined;
-
-  Meditation: undefined;
-
-  Prayer: undefined;
-
-  AudioLibrary: undefined;
-
-  Settings: undefined;
-
   LunarCalendar: undefined;
-
-  SpiritualAudio: undefined;
-
-  FortuneStick: undefined;
-
-  Horoscope: undefined;
 
   BaziChart:
     | {
@@ -115,39 +64,19 @@ export type RootTabParamList = {
       }
     | undefined;
 
+  ZiweiChart: undefined;
+
+  Settings: undefined;
+
+  Horoscope: undefined;
+
   BaziHistory: undefined;
 
   BaziStage4: undefined;
 
-  ZiweiChart: undefined;
-
-  DailyRitual: undefined;
-
-  PeaceJournal: undefined;
+  FortuneStick: undefined;
 
   BuddhistCalendar: undefined;
-
-  AltarCustomization: undefined;
-
-  ChantCounter: undefined;
-
-  PracticeJourney: undefined;
-
-  /*
-   * Các route này có thể giữ lại nếu
-   * bạn sẽ tích hợp ở giai đoạn sau.
-   */
-  DataSync: undefined;
-
-  ExportCenter: undefined;
-
-  PremiumLibrary: undefined;
-
-  PremiumContentDetail: {
-    contentId: string;
-  };
-
-  SmartReminder: undefined;
 };
 
 const Tab =
@@ -165,14 +94,21 @@ function TabIcon({
   focused,
 }: TabIconProps) {
   return (
-    <Text
+    <View
       style={[
-        styles.tabIcon,
+        styles.tabIconWrap,
         focused &&
-          styles.activeTabIcon,
+          styles.tabIconWrapActive,
       ]}>
-      {icon}
-    </Text>
+      <Text
+        style={[
+          styles.tabIcon,
+          focused &&
+            styles.tabIconActive,
+        ]}>
+        {icon}
+      </Text>
+    </View>
   );
 }
 
@@ -182,14 +118,10 @@ export default function RootNavigator() {
   /**
    * Tạm thời chưa có PremiumContext.
    *
-   * false:
-   * Banner quảng cáo được hiển thị.
+   * false: hiển thị banner.
+   * true: ẩn banner.
    *
-   * true:
-   * Banner quảng cáo bị ẩn.
-   *
-   * Sau này thay dòng này bằng:
-   *
+   * Sau này thay bằng:
    * const {isPremium} = usePremium();
    */
   const isPremium = true;
@@ -197,426 +129,306 @@ export default function RootNavigator() {
   return (
     <NavigationContainer>
       <View style={styles.root}>
-        <View style={styles.navigator}>
-          <Tab.Navigator
-            tabBar={props => (
-              <View style={styles.bottomArea}>
-                {!isPremium && (
-                  <View
-                    style={
-                      styles.bannerContainer
-                    }>
-                    <SmallBannerAd
-                      visible={!isPremium}
-                    />
-                  </View>
-                )}
-
-                <BottomTabBar {...props} />
-              </View>
-            )}
-            screenOptions={{
-              headerShown: false,
-
-              tabBarActiveTintColor:
-                colors.primary,
-
-              tabBarInactiveTintColor:
-                '#867A6E',
-
-              tabBarStyle:
-                styles.tabBar,
-
-              tabBarLabelStyle:
-                styles.tabBarLabel,
-            }}>
-            <Tab.Screen
-              name="Home"
-              component={HomeScreen}
-              options={{
-                title: t('tabs.home'),
-
-                tabBarIcon: ({
-                  focused,
-                }) => (
-                  <TabIcon
-                    icon="🏠"
-                    focused={focused}
+        <Tab.Navigator
+          initialRouteName="Home"
+          tabBar={props => (
+            <View style={styles.bottomArea}>
+              {!isPremium && (
+                <View
+                  style={
+                    styles.bannerContainer
+                  }>
+                  <SmallBannerAd
+                    visible={!isPremium}
                   />
-                ),
-              }}
-            />
+                </View>
+              )}
 
-            <Tab.Screen
-              name="Temple"
-              component={TempleScreen}
-              options={{
-                title: t(
-                  'tabs.temple',
-                ),
+              <BottomTabBar {...props} />
+            </View>
+          )}
+          screenOptions={{
+            headerShown: false,
+            tabBarHideOnKeyboard: true,
 
-                tabBarIcon: ({
-                  focused,
-                }) => (
-                  <TabIcon
-                    icon="🛕"
-                    focused={focused}
-                  />
-                ),
-              }}
-            />
+            tabBarActiveTintColor:
+              COLORS.gold,
 
-            <Tab.Screen
-              name="Meditation"
-              component={
-                MeditationScreen
-              }
-              options={{
-                title: t(
-                  'tabs.meditation',
-                ),
+            tabBarInactiveTintColor:
+              COLORS.tabInactive,
 
-                tabBarIcon: ({
-                  focused,
-                }) => (
-                  <TabIcon
-                    icon="🧘"
-                    focused={focused}
-                  />
-                ),
-              }}
-            />
+            tabBarStyle:
+              styles.tabBar,
 
-            <Tab.Screen
-              name="Prayer"
-              component={PrayerScreen}
-              options={{
-                title: t(
-                  'tabs.prayer',
-                ),
+            tabBarLabelStyle:
+              styles.tabBarLabel,
 
-                tabBarIcon: ({
-                  focused,
-                }) => (
-                  <TabIcon
-                    icon="🙏"
-                    focused={focused}
-                  />
-                ),
-              }}
-            />
+            tabBarItemStyle:
+              styles.tabBarItem,
+          }}>
+          <Tab.Screen
+            name="Home"
+            component={HomeScreen}
+            options={{
+              title: t(
+                'tabs.home',
+                {
+                  defaultValue:
+                    'Home',
+                },
+              ),
 
-            <Tab.Screen
-              name="AudioLibrary"
-              component={
-                AudioLibraryScreen
-              }
-              options={{
-                title: t(
-                  'audioLibrary.title',
-                  {
-                    defaultValue:
-                      'Âm thanh',
-                  },
-                ),
+              tabBarIcon: ({
+                focused,
+              }) => (
+                <TabIcon
+                  icon="✦"
+                  focused={focused}
+                />
+              ),
+            }}
+          />
 
-                tabBarButton:
-                  () => null,
+          <Tab.Screen
+            name="LunarCalendar"
+            component={
+              LunarCalendarScreen
+            }
+            options={{
+              title: t(
+                'lunarCalendar.title',
+                {
+                  defaultValue:
+                    'Calendar',
+                },
+              ),
 
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
+              tabBarIcon: ({
+                focused,
+              }) => (
+                <TabIcon
+                  icon="☾"
+                  focused={focused}
+                />
+              ),
+            }}
+          />
 
-            <Tab.Screen
-              name="LunarCalendar"
-              component={
-                LunarCalendarScreen
-              }
-              options={{
-                title: t(
-                  'lunarCalendar.title',
-                ),
+          <Tab.Screen
+            name="BaziChart"
+            component={
+              BaziChartScreen
+            }
+            options={{
+              title: t(
+                'bazi.title',
+                {
+                  defaultValue:
+                    'BaZi',
+                },
+              ),
 
-                tabBarButton:
-                  () => null,
+              tabBarIcon: ({
+                focused,
+              }) => (
+                <TabIcon
+                  icon="☯"
+                  focused={focused}
+                />
+              ),
+            }}
+          />
 
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
+          <Tab.Screen
+            name="ZiweiChart"
+            component={
+              ZiweiChartScreen
+            }
+            options={{
+              title: t(
+                'ziwei.title',
+                {
+                  defaultValue:
+                    'Zi Wei',
+                },
+              ),
 
-            <Tab.Screen
-              name="SpiritualAudio"
-              component={
-                SpiritualAudioScreen
-              }
-              options={{
-                title: t(
-                  'spiritualAudio.title',
-                ),
+              tabBarIcon: ({
+                focused,
+              }) => (
+                <TabIcon
+                  icon="紫"
+                  focused={focused}
+                />
+              ),
+            }}
+          />
 
-                tabBarButton:
-                  () => null,
+          <Tab.Screen
+            name="Settings"
+            component={
+              SettingsScreen
+            }
+            options={{
+              title: t(
+                'settings.title',
+                {
+                  defaultValue:
+                    'Settings',
+                },
+              ),
 
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
+              tabBarIcon: ({
+                focused,
+              }) => (
+                <TabIcon
+                  icon="⚙"
+                  focused={focused}
+                />
+              ),
+            }}
+          />
 
-            <Tab.Screen
-              name="FortuneStick"
-              component={
-                FortuneStickScreen
-              }
-              options={{
-                title: t(
-                  'fortuneStick.title',
-                ),
+          {/*
+           * Các màn hình bên dưới vẫn điều hướng được từ HomeScreen,
+           * nhưng không hiển thị thành nút trên thanh tab.
+           */}
 
-                tabBarButton:
-                  () => null,
+          <Tab.Screen
+            name="Horoscope"
+            component={
+              HoroscopeScreen
+            }
+            options={{
+              title: t(
+                'horoscope.title',
+                {
+                  defaultValue:
+                    'Horoscope and Auspicious Dates',
+                },
+              ),
 
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
+              tabBarButton:
+                () => null,
 
-            <Tab.Screen
-              name="Horoscope"
-              component={
-                HoroscopeScreen
-              }
-              options={{
-                title: t(
-                  'horoscope.title',
-                ),
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
 
-                tabBarButton:
-                  () => null,
+          <Tab.Screen
+            name="BaziHistory"
+            component={
+              BaziHistoryScreen
+            }
+            options={{
+              title: t(
+                'bazi.stage3.historyTitle',
+                {
+                  defaultValue:
+                    'Saved Charts',
+                },
+              ),
 
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
+              tabBarButton:
+                () => null,
 
-            <Tab.Screen
-              name="Settings"
-              component={
-                SettingsScreen
-              }
-              options={{
-                title: t(
-                  'settings.title',
-                  {
-                    defaultValue:
-                      'Cài đặt',
-                  },
-                ),
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
 
-                tabBarButton:
-                  () => null,
+          <Tab.Screen
+            name="BaziStage4"
+            component={
+              BaziStage4Screen
+            }
+            options={{
+              title: t(
+                'bazi.stage4.title',
+                {
+                  defaultValue:
+                    'Timing and Compatibility',
+                },
+              ),
 
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
+              tabBarButton:
+                () => null,
 
-            <Tab.Screen
-              name="BaziChart"
-              component={
-                BaziChartScreen
-              }
-              options={{
-                title: t(
-                  'bazi.title',
-                ),
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
 
-                tabBarButton:
-                  () => null,
+          <Tab.Screen
+            name="FortuneStick"
+            component={
+              FortuneStickScreen
+            }
+            options={{
+              title: t(
+                'fortuneStick.title',
+                {
+                  defaultValue:
+                    'Fortune Stick',
+                },
+              ),
 
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
+              tabBarButton:
+                () => null,
 
-            <Tab.Screen
-              name="BaziHistory"
-              component={
-                BaziHistoryScreen
-              }
-              options={{
-                title: t(
-                  'bazi.stage3.historyTitle',
-                ),
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
 
-                tabBarButton:
-                  () => null,
+          <Tab.Screen
+            name="BuddhistCalendar"
+            component={
+              BuddhistCalendarScreen
+            }
+            options={{
+              title: t(
+                'astrologyHome.cards.holidayTitle',
+                {
+                  defaultValue:
+                    'Holidays and Observances',
+                },
+              ),
 
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
+              tabBarButton:
+                () => null,
 
-            <Tab.Screen
-              name="BaziStage4"
-              component={
-                BaziStage4Screen
-              }
-              options={{
-                title: t(
-                  'bazi.stage4.title',
-                ),
-
-                tabBarButton:
-                  () => null,
-
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
-
-            <Tab.Screen
-              name="ZiweiChart"
-              component={
-                ZiweiChartScreen
-              }
-              options={{
-                title: t(
-                  'ziwei.title',
-                ),
-
-                tabBarButton:
-                  () => null,
-
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
-
-            <Tab.Screen
-              name="DailyRitual"
-              component={
-                DailyRitualScreen
-              }
-              options={{
-                title: t(
-                  'practice.title',
-                ),
-
-                tabBarButton:
-                  () => null,
-
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
-
-            <Tab.Screen
-              name="PeaceJournal"
-              component={
-                PeaceJournalScreen
-              }
-              options={{
-                title: t(
-                  'peaceJournal.title',
-                ),
-
-                tabBarButton:
-                  () => null,
-
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
-
-            <Tab.Screen
-              name="BuddhistCalendar"
-              component={
-                BuddhistCalendarScreen
-              }
-              options={{
-                title: t(
-                  'buddhistCalendar.title',
-                ),
-
-                tabBarButton:
-                  () => null,
-
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
-
-            <Tab.Screen
-              name="AltarCustomization"
-              component={
-                AltarCustomizationScreen
-              }
-              options={{
-                title: t(
-                  'altarCustomization.title',
-                ),
-
-                tabBarButton:
-                  () => null,
-
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
-
-            <Tab.Screen
-              name="ChantCounter"
-              component={
-                ChantCounterScreen
-              }
-              options={{
-                title: t(
-                  'chantCounter.title',
-                ),
-
-                tabBarButton:
-                  () => null,
-
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
-
-            <Tab.Screen
-              name="PracticeJourney"
-              component={
-                PracticeJourneyScreen
-              }
-              options={{
-                title: t(
-                  'practiceJourney.title',
-                ),
-
-                tabBarButton:
-                  () => null,
-
-                tabBarItemStyle:
-                  styles.hiddenTab,
-              }}
-            />
-          </Tab.Navigator>
-        </View>
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+        </Tab.Navigator>
       </View>
     </NavigationContainer>
   );
 }
 
+const COLORS = {
+  navy: '#17243A',
+  navySoft: '#22324B',
+  gold: '#D7AF5E',
+  cream: '#F7F2E8',
+  surface: '#FFFDF8',
+  border: '#DED4C3',
+  tabInactive: '#7D807E',
+};
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor:
-      colors.background,
+      COLORS.cream,
   },
 
   bottomArea: {
-    backgroundColor: '#FFFAF2',
+    backgroundColor:
+      COLORS.surface,
   },
 
   bannerContainer: {
@@ -624,14 +436,12 @@ const styles = StyleSheet.create({
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFAF2',
+    backgroundColor:
+      COLORS.surface,
     borderTopWidth:
       StyleSheet.hairlineWidth,
-    borderTopColor: '#EADBC8',
-  },
-
-  navigator: {
-    flex: 1,
+    borderTopColor:
+      COLORS.border,
   },
 
   tabBar: {
@@ -640,30 +450,71 @@ const styles = StyleSheet.create({
         ? 88
         : 70,
 
-    paddingTop: 7,
+    paddingTop: 6,
 
     paddingBottom:
       Platform.OS === 'ios'
         ? 22
         : 8,
 
-    backgroundColor: '#FFFAF2',
+    backgroundColor:
+      COLORS.surface,
 
-    borderTopColor: '#EADBC8',
+    borderTopWidth:
+      StyleSheet.hairlineWidth,
+
+    borderTopColor:
+      COLORS.border,
+
+    elevation: 10,
+
+    shadowColor: '#000000',
+
+    shadowOpacity:
+      Platform.OS === 'ios'
+        ? 0.08
+        : 0,
+
+    shadowRadius: 10,
+
+    shadowOffset: {
+      width: 0,
+      height: -3,
+    },
+  },
+
+  tabBarItem: {
+    paddingTop: 1,
   },
 
   tabBarLabel: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+
+  tabIconWrap: {
+    width: 33,
+    height: 27,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+
+  tabIconWrapActive: {
+    backgroundColor:
+      'rgba(215,175,94,0.16)',
   },
 
   tabIcon: {
-    fontSize: 21,
-    opacity: 0.6,
+    color: COLORS.tabInactive,
+    fontSize: 19,
+    fontWeight: '900',
+    opacity: 0.72,
   },
 
-  activeTabIcon: {
-    fontSize: 23,
+  tabIconActive: {
+    color: COLORS.gold,
+    fontSize: 20,
     opacity: 1,
   },
 
@@ -671,4 +522,3 @@ const styles = StyleSheet.create({
     display: 'none',
   },
 });
-

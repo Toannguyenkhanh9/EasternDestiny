@@ -19,6 +19,8 @@ import chantCounter
   from './chantCounter.ja';
   import practiceJourney
   from './practiceJourney.ja';
+  import astrologyHome
+  from './astrologyHome.ja';
 const ja = {
   common: {
     cancel: 'キャンセル',
@@ -992,7 +994,8 @@ meditation: {
   premiumContent,
   smartFeatures,
   chantCounter,
-  practiceJourney
+  practiceJourney,
+  astrologyHome
 } as const;
 
 export default ja;
