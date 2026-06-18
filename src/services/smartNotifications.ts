@@ -1,122 +1,405 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage
+  from '@react-native-async-storage/async-storage';
+
 import notifee, {
   AndroidImportance,
   AuthorizationStatus,
-  RepeatFrequency,
   TriggerType,
   type TimestampTrigger,
 } from '@notifee/react-native';
 
 import {
-  getUpcomingBuddhistEvents,
-} from './buddhistCalendar';
-import {
-  getPracticeStats,
-  getTodayPractice,
-} from './practice';
+  buildDailyBrief,
+} from './dailyBrief';
 
-export type SmartReminderTime = {
-  hour: number;
-  minute: number;
+import {
+  getUserProfiles,
+  type UserProfile,
+} from './userProfiles';
+
+export type SmartNotificationPreferences = {
+  dailyEnabled: boolean;
+  dailyHour: number;
+  dailyMinute: number;
+  dailyProfileId?: string;
+
+  monthlyEnabled: boolean;
+  monthlyDay: number;
+  monthlyHour: number;
+  monthlyMinute: number;
 };
 
-export type SmartNotificationSettings = {
-  enabled: boolean;
-  dailyPracticeEnabled: boolean;
-  dailyPracticeTime: SmartReminderTime;
-  streakProtectionEnabled: boolean;
-  streakProtectionTime: SmartReminderTime;
-  buddhistCalendarEnabled: boolean;
-  buddhistCalendarTime: SmartReminderTime;
+type NotificationEnvelope = {
+  schemaVersion: 1;
+  preferences:
+    SmartNotificationPreferences;
 };
 
 const STORAGE_KEY =
-  '@online_pagoda/smart_notification_settings_v1';
+  '@eastern_destiny/smart_notifications_v1';
 
-const CHANNEL_ID = 'spiritual-practice';
+const LAST_REFRESH_KEY =
+  '@eastern_destiny/smart_notifications_last_refresh_v1';
 
-const DAILY_ID = 'daily-practice-reminder';
-const STREAK_ID = 'streak-protection-reminder';
-const BUDDHIST_PREFIX = 'buddhist-calendar-';
+const CHANNEL_ID =
+  'eastern-destiny-daily';
 
-export const DEFAULT_SMART_NOTIFICATION_SETTINGS: SmartNotificationSettings = {
-  enabled: true,
-  dailyPracticeEnabled: true,
-  dailyPracticeTime: {
-    hour: 20,
-    minute: 0,
+const DAILY_PREFIX =
+  'ed-daily-';
+
+const MONTHLY_PREFIX =
+  'ed-monthly-';
+
+export const DEFAULT_SMART_NOTIFICATION_PREFERENCES:
+  SmartNotificationPreferences = {
+    dailyEnabled: false,
+    dailyHour: 8,
+    dailyMinute: 0,
+    monthlyEnabled: false,
+    monthlyDay: 1,
+    monthlyHour: 9,
+    monthlyMinute: 0,
+  };
+
+type NotificationCopy = {
+  dailyTitle: string;
+  dailyFallback: string;
+  monthlyTitle: string;
+  monthlyBody: string;
+  profilePrefix: string;
+  headlines: Record<
+    string,
+    string
+  >;
+};
+
+const COPY: Record<
+  string,
+  NotificationCopy
+> = {
+  vi: {
+    dailyTitle:
+      'Eastern Destiny · Hôm nay',
+    dailyFallback:
+      'Mở bản tóm tắt hôm nay để xem ngày âm, Can Chi và gợi ý cá nhân.',
+    monthlyTitle:
+      'Tổng kết tháng đã sẵn sàng',
+    monthlyBody:
+      'Xem lại sự kiện, ghi chú, dấu trang và nội dung bạn đã khám phá trong tháng.',
+    profilePrefix:
+      'Hồ sơ',
+    headlines: {
+      slowDown:
+        'Hôm nay nên chậm lại và kiểm tra kỹ trước quyết định quan trọng.',
+      connection:
+        'Hôm nay có nhịp thuận cho kết nối, trao đổi và hoàn tất việc đang làm.',
+      steadyMomentum:
+        'Hôm nay phù hợp để duy trì tiến độ và hoàn thành một ưu tiên rõ ràng.',
+      carefulReview:
+        'Hôm nay nên rà soát thông tin và tránh nhận quá nhiều việc cùng lúc.',
+      balancedDay:
+        'Hôm nay có nhịp khá cân bằng; hãy chọn một việc quan trọng để tập trung.',
+    },
   },
-  streakProtectionEnabled: true,
-  streakProtectionTime: {
-    hour: 21,
-    minute: 30,
+
+  en: {
+    dailyTitle:
+      'Eastern Destiny · Today',
+    dailyFallback:
+      'Open today’s brief for the lunar date, sexagenary pattern, and personal guidance.',
+    monthlyTitle:
+      'Your monthly review is ready',
+    monthlyBody:
+      'Review events, notes, bookmarks, and the content you explored this month.',
+    profilePrefix:
+      'Profile',
+    headlines: {
+      slowDown:
+        'Slow down today and review details before major decisions.',
+      connection:
+        'Today supports communication, connection, and completing ongoing work.',
+      steadyMomentum:
+        'Today favors steady momentum and one clearly defined priority.',
+      carefulReview:
+        'Review information carefully and avoid taking on too much at once.',
+      balancedDay:
+        'Today is relatively balanced; choose one meaningful priority.',
+    },
   },
-  buddhistCalendarEnabled: true,
-  buddhistCalendarTime: {
-    hour: 7,
-    minute: 0,
+
+  zh: {
+    dailyTitle:
+      'Eastern Destiny · 今日',
+    dailyFallback:
+      '打开今日简报，查看农历、干支与个人参考。',
+    monthlyTitle:
+      '月度回顾已准备好',
+    monthlyBody:
+      '回顾本月的事件、笔记、收藏与探索内容。',
+    profilePrefix:
+      '档案',
+    headlines: {
+      slowDown:
+        '今天宜放慢脚步，重大决定前先核对细节。',
+      connection:
+        '今天较适合沟通、连接与完成正在进行的事务。',
+      steadyMomentum:
+        '今天适合保持稳定进度，并专注一个明确重点。',
+      carefulReview:
+        '今天宜仔细复核信息，避免同时承担过多事务。',
+      balancedDay:
+        '今天整体较平衡，请选择一个真正重要的重点。',
+    },
+  },
+
+  ko: {
+    dailyTitle:
+      'Eastern Destiny · 오늘',
+    dailyFallback:
+      '오늘의 음력, 간지와 개인 안내를 확인하세요.',
+    monthlyTitle:
+      '월간 리뷰가 준비되었습니다',
+    monthlyBody:
+      '이번 달의 이벤트, 메모, 북마크와 탐색 내용을 돌아보세요.',
+    profilePrefix:
+      '프로필',
+    headlines: {
+      slowDown:
+        '오늘은 속도를 늦추고 큰 결정 전 세부 사항을 확인하세요.',
+      connection:
+        '오늘은 소통, 연결과 진행 중인 일의 마무리에 도움이 됩니다.',
+      steadyMomentum:
+        '오늘은 꾸준한 진행과 하나의 분명한 우선순위에 적합합니다.',
+      carefulReview:
+        '정보를 꼼꼼히 확인하고 한꺼번에 너무 많은 일을 맡지 마세요.',
+      balancedDay:
+        '오늘은 비교적 균형적이므로 의미 있는 한 가지에 집중하세요.',
+    },
+  },
+
+  ja: {
+    dailyTitle:
+      'Eastern Destiny · 今日',
+    dailyFallback:
+      '今日の旧暦、干支、個人向けの参考を確認しましょう。',
+    monthlyTitle:
+      '月間レビューの準備ができました',
+    monthlyBody:
+      '今月の出来事、メモ、ブックマーク、閲覧内容を振り返りましょう。',
+    profilePrefix:
+      'プロフィール',
+    headlines: {
+      slowDown:
+        '今日は少し速度を落とし、大きな判断の前に詳細を確認しましょう。',
+      connection:
+        '今日は対話、つながり、継続中の作業の完了に向いています。',
+      steadyMomentum:
+        '今日は着実な進行と一つの明確な優先事項に向いています。',
+      carefulReview:
+        '情報を丁寧に確認し、一度に多くを引き受けないようにしましょう。',
+      balancedDay:
+        '今日は比較的バランスが良いので、大切な一つに集中しましょう。',
+    },
   },
 };
 
-export async function getSmartNotificationSettings(): Promise<SmartNotificationSettings> {
+function normalizeLanguage(
+  language?: string,
+): string {
+  const value =
+    (
+      language ??
+      'en'
+    ).toLowerCase();
+
+  if (
+    value.startsWith('vi')
+  ) {
+    return 'vi';
+  }
+
+  if (
+    value.startsWith('zh')
+  ) {
+    return 'zh';
+  }
+
+  if (
+    value.startsWith('ko')
+  ) {
+    return 'ko';
+  }
+
+  if (
+    value.startsWith('ja')
+  ) {
+    return 'ja';
+  }
+
+  return 'en';
+}
+
+function clampInteger(
+  value: unknown,
+  min: number,
+  max: number,
+  fallback: number,
+): number {
+  const numeric =
+    Number(value);
+
+  if (
+    !Number.isFinite(numeric)
+  ) {
+    return fallback;
+  }
+
+  return Math.min(
+    max,
+    Math.max(
+      min,
+      Math.round(numeric),
+    ),
+  );
+}
+
+function normalizePreferences(
+  value: unknown,
+): SmartNotificationPreferences {
+  if (
+    !value ||
+    typeof value !== 'object'
+  ) {
+    return {
+      ...DEFAULT_SMART_NOTIFICATION_PREFERENCES,
+    };
+  }
+
+  const candidate =
+    value as Partial<
+      SmartNotificationPreferences
+    >;
+
+  return {
+    dailyEnabled:
+      Boolean(
+        candidate.dailyEnabled,
+      ),
+    dailyHour:
+      clampInteger(
+        candidate.dailyHour,
+        0,
+        23,
+        8,
+      ),
+    dailyMinute:
+      clampInteger(
+        candidate.dailyMinute,
+        0,
+        59,
+        0,
+      ),
+    dailyProfileId:
+      typeof candidate.dailyProfileId ===
+      'string'
+        ? candidate.dailyProfileId
+        : undefined,
+
+    monthlyEnabled:
+      Boolean(
+        candidate.monthlyEnabled,
+      ),
+    monthlyDay:
+      clampInteger(
+        candidate.monthlyDay,
+        1,
+        28,
+        1,
+      ),
+    monthlyHour:
+      clampInteger(
+        candidate.monthlyHour,
+        0,
+        23,
+        9,
+      ),
+    monthlyMinute:
+      clampInteger(
+        candidate.monthlyMinute,
+        0,
+        59,
+        0,
+      ),
+  };
+}
+
+export async function getSmartNotificationPreferences(): Promise<
+  SmartNotificationPreferences
+> {
   try {
-    const raw = await AsyncStorage.getItem(
-      STORAGE_KEY,
-    );
+    const raw =
+      await AsyncStorage.getItem(
+        STORAGE_KEY,
+      );
 
     if (!raw) {
-      return DEFAULT_SMART_NOTIFICATION_SETTINGS;
+      return {
+        ...DEFAULT_SMART_NOTIFICATION_PREFERENCES,
+      };
     }
 
+    const parsed =
+      JSON.parse(raw) as Partial<
+        NotificationEnvelope
+      >;
+
+    return normalizePreferences(
+      parsed.preferences,
+    );
+  } catch (error) {
+    console.warn(
+      'Unable to read smart notification preferences:',
+      error,
+    );
+
     return {
-      ...DEFAULT_SMART_NOTIFICATION_SETTINGS,
-      ...(JSON.parse(
-        raw,
-      ) as Partial<SmartNotificationSettings>),
+      ...DEFAULT_SMART_NOTIFICATION_PREFERENCES,
     };
-  } catch {
-    return DEFAULT_SMART_NOTIFICATION_SETTINGS;
   }
 }
 
-export async function saveSmartNotificationSettings(
-  settings: SmartNotificationSettings,
+export async function saveSmartNotificationPreferences(
+  preferences:
+    SmartNotificationPreferences,
 ): Promise<void> {
+  const normalized =
+    normalizePreferences(
+      preferences,
+    );
+
   await AsyncStorage.setItem(
     STORAGE_KEY,
-    JSON.stringify(settings),
+    JSON.stringify({
+      schemaVersion: 1,
+      preferences:
+        normalized,
+    }),
   );
 }
 
 async function ensureChannel(): Promise<void> {
   await notifee.createChannel({
     id: CHANNEL_ID,
-    name: 'Spiritual Practice',
-    importance: AndroidImportance.DEFAULT,
+    name:
+      'Eastern Destiny',
+    importance:
+      AndroidImportance.DEFAULT,
   });
 }
 
-function nextTimestamp(
-  time: SmartReminderTime,
-): number {
-  const now = new Date();
-  const next = new Date();
-
-  next.setHours(
-    time.hour,
-    time.minute,
-    0,
-    0,
-  );
-
-  if (next.getTime() <= now.getTime()) {
-    next.setDate(next.getDate() + 1);
-  }
-
-  return next.getTime();
-}
-
-export async function requestNotificationPermission(): Promise<boolean> {
+export async function requestSmartNotificationPermission(): Promise<
+  boolean
+> {
   const settings =
     await notifee.requestPermission();
 
@@ -128,245 +411,448 @@ export async function requestNotificationPermission(): Promise<boolean> {
   );
 }
 
-async function cancelManagedNotifications(): Promise<void> {
+async function cancelByPrefix(
+  prefix: string,
+): Promise<void> {
   const ids =
     await notifee.getTriggerNotificationIds();
 
-  const managed = ids.filter(
-    id =>
-      id === DAILY_ID ||
-      id === STREAK_ID ||
-      id.startsWith(
-        BUDDHIST_PREFIX,
+  await Promise.all(
+    ids
+      .filter(id =>
+        id.startsWith(
+          prefix,
+        ),
+      )
+      .map(id =>
+        notifee.cancelTriggerNotification(
+          id,
+        ),
       ),
   );
+}
 
-  await Promise.all(
-    managed.map(id =>
-      notifee.cancelTriggerNotification(
-        id,
-      ),
-    ),
+function resolveProfile(
+  profiles: UserProfile[],
+  profileId?: string,
+): UserProfile | null {
+  if (profileId) {
+    const exact =
+      profiles.find(
+        item =>
+          item.id ===
+          profileId,
+      );
+
+    if (exact) {
+      return exact;
+    }
+  }
+
+  return (
+    profiles.find(
+      item =>
+        item.isFavorite,
+    ) ??
+    profiles[0] ??
+    null
   );
 }
 
-async function scheduleDailyPractice(
-  settings: SmartNotificationSettings,
-  title: string,
-  body: string,
-): Promise<void> {
-  if (
-    !settings.enabled ||
-    !settings.dailyPracticeEnabled
+function nextDailyDates(
+  count: number,
+  hour: number,
+  minute: number,
+): Date[] {
+  const result: Date[] = [];
+  const now = new Date();
+
+  for (
+    let offset = 0;
+    result.length < count &&
+    offset < count + 3;
+    offset += 1
   ) {
-    return;
-  }
-
-  const trigger: TimestampTrigger = {
-    type: TriggerType.TIMESTAMP,
-    timestamp: nextTimestamp(
-      settings.dailyPracticeTime,
-    ),
-    repeatFrequency:
-      RepeatFrequency.DAILY,
-  };
-
-  await notifee.createTriggerNotification(
-    {
-      id: DAILY_ID,
-      title,
-      body,
-      android: {
-        channelId: CHANNEL_ID,
-        pressAction: {
-          id: 'default',
-          launchActivity: 'default',
-        },
-      },
-      data: {
-        route: 'DailyRitual',
-      },
-    },
-    trigger,
-  );
-}
-
-async function scheduleStreakProtection(
-  settings: SmartNotificationSettings,
-  title: string,
-  body: string,
-): Promise<void> {
-  if (
-    !settings.enabled ||
-    !settings.streakProtectionEnabled
-  ) {
-    return;
-  }
-
-  const stats = await getPracticeStats();
-  const today = await getTodayPractice();
-
-  const completedToday =
-    Object.values(
-      today.activities,
-    ).some(Boolean);
-
-  if (
-    stats.currentStreak <= 0 ||
-    completedToday
-  ) {
-    return;
-  }
-
-  const trigger: TimestampTrigger = {
-    type: TriggerType.TIMESTAMP,
-    timestamp: nextTimestamp(
-      settings.streakProtectionTime,
-    ),
-  };
-
-  await notifee.createTriggerNotification(
-    {
-      id: STREAK_ID,
-      title,
-      body,
-      android: {
-        channelId: CHANNEL_ID,
-        pressAction: {
-          id: 'default',
-          launchActivity: 'default',
-        },
-      },
-      data: {
-        route: 'DailyRitual',
-      },
-    },
-    trigger,
-  );
-}
-
-async function scheduleBuddhistDates(
-  settings: SmartNotificationSettings,
-  titleFactory: (
-    day: number,
-    month: number,
-  ) => string,
-  bodyFactory: (
-    eventTitleKey: string,
-  ) => string,
-): Promise<void> {
-  if (
-    !settings.enabled ||
-    !settings.buddhistCalendarEnabled
-  ) {
-    return;
-  }
-
-  const upcoming =
-    getUpcomingBuddhistEvents(
-      new Date(),
-      120,
-    ).slice(0, 18);
-
-  await Promise.all(
-    upcoming.map(async day => {
-      const when = new Date(day.date);
-
-      when.setDate(when.getDate() - 1);
-      when.setHours(
-        settings.buddhistCalendarTime
-          .hour,
-        settings.buddhistCalendarTime
-          .minute,
+    const date =
+      new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() +
+          offset,
+        hour,
+        minute,
         0,
         0,
       );
 
-      if (
-        when.getTime() <= Date.now()
-      ) {
-        return;
-      }
+    if (
+      date.getTime() >
+      now.getTime() +
+        15_000
+    ) {
+      result.push(date);
+    }
+  }
 
-      const firstEvent =
-        day.events[0];
+  return result;
+}
 
-      const trigger: TimestampTrigger = {
-        type: TriggerType.TIMESTAMP,
-        timestamp: when.getTime(),
-      };
+function nextMonthlyDates(
+  count: number,
+  day: number,
+  hour: number,
+  minute: number,
+): Date[] {
+  const result: Date[] = [];
+  const now = new Date();
+
+  for (
+    let offset = 0;
+    result.length < count &&
+    offset < count + 3;
+    offset += 1
+  ) {
+    const date =
+      new Date(
+        now.getFullYear(),
+        now.getMonth() +
+          offset,
+        day,
+        hour,
+        minute,
+        0,
+        0,
+      );
+
+    if (
+      date.getTime() >
+      now.getTime() +
+        15_000
+    ) {
+      result.push(date);
+    }
+  }
+
+  return result;
+}
+
+export async function scheduleSmartNotifications(
+  preferences:
+    SmartNotificationPreferences,
+  language?: string,
+): Promise<{
+  dailyScheduled: number;
+  monthlyScheduled: number;
+}> {
+  const normalized =
+    normalizePreferences(
+      preferences,
+    );
+
+  await saveSmartNotificationPreferences(
+    normalized,
+  );
+
+  await ensureChannel();
+
+  await Promise.all([
+    cancelByPrefix(
+      DAILY_PREFIX,
+    ),
+    cancelByPrefix(
+      MONTHLY_PREFIX,
+    ),
+  ]);
+
+  const profiles =
+    await getUserProfiles();
+
+  const profile =
+    resolveProfile(
+      profiles,
+      normalized.dailyProfileId,
+    );
+
+  const copy =
+    COPY[
+      normalizeLanguage(
+        language,
+      )
+    ];
+
+  let dailyScheduled = 0;
+  let monthlyScheduled = 0;
+
+  if (
+    normalized.dailyEnabled
+  ) {
+    const dates =
+      nextDailyDates(
+        30,
+        normalized.dailyHour,
+        normalized.dailyMinute,
+      );
+
+    for (
+      let index = 0;
+      index < dates.length;
+      index += 1
+    ) {
+      const date =
+        dates[index];
+
+      const brief =
+        buildDailyBrief(
+          profile,
+          date,
+        );
+
+      const profileLine =
+        profile
+          ? `${copy.profilePrefix}: ${profile.displayName}\n`
+          : '';
+
+      const trigger:
+        TimestampTrigger = {
+          type:
+            TriggerType.TIMESTAMP,
+          timestamp:
+            date.getTime(),
+        };
 
       await notifee.createTriggerNotification(
         {
-          id: `${BUDDHIST_PREFIX}${day.solarDateKey}`,
-          title: titleFactory(
-            day.lunarDay,
-            day.lunarMonth,
-          ),
-          body: bodyFactory(
-            firstEvent.titleKey,
-          ),
+          id:
+            `${DAILY_PREFIX}${brief.dateKey}`,
+          title:
+            copy.dailyTitle,
+          body:
+            `${profileLine}${
+              copy.headlines[
+                brief.headlineCode
+              ] ??
+              copy.dailyFallback
+            }`,
           android: {
-            channelId: CHANNEL_ID,
+            channelId:
+              CHANNEL_ID,
             pressAction: {
               id: 'default',
               launchActivity:
                 'default',
             },
+            smallIcon:
+              'ic_notification',
+          },
+          ios: {
+            sound: 'default',
           },
           data: {
             route:
-              'BuddhistCalendar',
+              'DailyBrief',
+            profileId:
+              profile?.id ??
+              '',
+            dateKey:
+              brief.dateKey,
           },
         },
         trigger,
       );
-    }),
+
+      dailyScheduled += 1;
+    }
+  }
+
+  if (
+    normalized.monthlyEnabled
+  ) {
+    const dates =
+      nextMonthlyDates(
+        12,
+        normalized.monthlyDay,
+        normalized.monthlyHour,
+        normalized.monthlyMinute,
+      );
+
+    for (
+      let index = 0;
+      index < dates.length;
+      index += 1
+    ) {
+      const date =
+        dates[index];
+
+      const monthKey =
+        [
+          date.getFullYear(),
+          String(
+            date.getMonth() +
+              1,
+          ).padStart(
+            2,
+            '0',
+          ),
+        ].join('-');
+
+      const trigger:
+        TimestampTrigger = {
+          type:
+            TriggerType.TIMESTAMP,
+          timestamp:
+            date.getTime(),
+        };
+
+      await notifee.createTriggerNotification(
+        {
+          id:
+            `${MONTHLY_PREFIX}${monthKey}`,
+          title:
+            copy.monthlyTitle,
+          body:
+            copy.monthlyBody,
+          android: {
+            channelId:
+              CHANNEL_ID,
+            pressAction: {
+              id: 'default',
+              launchActivity:
+                'default',
+            },
+            smallIcon:
+              'ic_notification',
+          },
+          ios: {
+            sound: 'default',
+          },
+          data: {
+            route:
+              'MonthlyReview',
+            year:
+              String(
+                date.getFullYear(),
+              ),
+            month:
+              String(
+                date.getMonth() + 1,
+              ),
+          },
+        },
+        trigger,
+      );
+
+      monthlyScheduled += 1;
+    }
+  }
+
+  const refreshedAt =
+    new Date();
+
+  const refreshKey = [
+    refreshedAt.getFullYear(),
+    String(
+      refreshedAt.getMonth() + 1,
+    ).padStart(
+      2,
+      '0',
+    ),
+    String(
+      refreshedAt.getDate(),
+    ).padStart(
+      2,
+      '0',
+    ),
+  ].join('-');
+
+  await AsyncStorage.setItem(
+    LAST_REFRESH_KEY,
+    refreshKey,
+  );
+
+  return {
+    dailyScheduled,
+    monthlyScheduled,
+  };
+}
+
+export async function refreshSmartNotifications(
+  language?: string,
+): Promise<{
+  dailyScheduled: number;
+  monthlyScheduled: number;
+}> {
+  const preferences =
+    await getSmartNotificationPreferences();
+
+  return scheduleSmartNotifications(
+    preferences,
+    language,
   );
 }
 
-export type SmartNotificationCopy = {
-  dailyTitle: string;
-  dailyBody: string;
-  streakTitle: string;
-  streakBody: string;
-  buddhistTitle: (
-    day: number,
-    month: number,
-  ) => string;
-  buddhistBody: (
-    eventTitleKey: string,
-  ) => string;
-};
+export async function refreshSmartNotificationsIfNeeded(
+  language?: string,
+): Promise<boolean> {
+  const preferences =
+    await getSmartNotificationPreferences();
 
-export async function refreshSmartNotifications(
-  copy: SmartNotificationCopy,
-): Promise<void> {
-  const settings =
-    await getSmartNotificationSettings();
-
-  await ensureChannel();
-  await cancelManagedNotifications();
-
-  if (!settings.enabled) {
-    return;
+  if (
+    !preferences.dailyEnabled &&
+    !preferences.monthlyEnabled
+  ) {
+    return false;
   }
 
-  await scheduleDailyPractice(
-    settings,
-    copy.dailyTitle,
-    copy.dailyBody,
+  const now = new Date();
+
+  const todayKey = [
+    now.getFullYear(),
+    String(
+      now.getMonth() + 1,
+    ).padStart(
+      2,
+      '0',
+    ),
+    String(
+      now.getDate(),
+    ).padStart(
+      2,
+      '0',
+    ),
+  ].join('-');
+
+  const lastRefresh =
+    await AsyncStorage.getItem(
+      LAST_REFRESH_KEY,
+    );
+
+  if (
+    lastRefresh ===
+    todayKey
+  ) {
+    return false;
+  }
+
+  await scheduleSmartNotifications(
+    preferences,
+    language,
   );
 
-  await scheduleStreakProtection(
-    settings,
-    copy.streakTitle,
-    copy.streakBody,
+  await AsyncStorage.setItem(
+    LAST_REFRESH_KEY,
+    todayKey,
   );
 
-  await scheduleBuddhistDates(
-    settings,
-    copy.buddhistTitle,
-    copy.buddhistBody,
-  );
+  return true;
+}
+
+export async function cancelAllSmartNotifications(): Promise<void> {
+  await Promise.all([
+    cancelByPrefix(
+      DAILY_PREFIX,
+    ),
+    cancelByPrefix(
+      MONTHLY_PREFIX,
+    ),
+  ]);
 }

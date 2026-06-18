@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 
 import {
   Platform,
@@ -9,6 +9,7 @@ import {
 
 import {
   NavigationContainer,
+  createNavigationContainerRef,
 } from '@react-navigation/native';
 
 import {
@@ -20,6 +21,14 @@ import {
   useTranslation,
 } from 'react-i18next';
 
+import notifee, {
+  EventType,
+} from '@notifee/react-native';
+
+import {
+  recordRecentlyViewedRoute,
+} from '../services/recentlyViewed';
+
 import SmallBannerAd
   from '../components/SmallBannerAd';
 
@@ -29,6 +38,45 @@ import HomeScreen
 import LunarCalendarScreen
   from '../screens/LunarCalendarScreen';
 
+import TodayScreen
+  from '../screens/TodayScreen';
+
+import RecentlyViewedScreen
+  from '../screens/RecentlyViewedScreen';
+
+import BookmarksNotesScreen
+  from '../screens/BookmarksNotesScreen';
+
+import LifeTimelineScreen
+  from '../screens/LifeTimelineScreen';
+
+import AdvancedCompatibilityScreen
+  from '../screens/AdvancedCompatibilityScreen';
+
+import ExpertModeScreen
+  from '../screens/ExpertModeScreen';
+
+import TimelineEventEditorScreen
+  from '../screens/TimelineEventEditorScreen';
+
+import ProfileOverviewScreen
+  from '../screens/ProfileOverviewScreen';
+
+import ExplainableResultScreen
+  from '../screens/ExplainableResultScreen';
+
+import DailyBriefScreen
+  from '../screens/DailyBriefScreen';
+
+import MonthlyReviewScreen
+  from '../screens/MonthlyReviewScreen';
+
+import SmartNotificationsScreen
+  from '../screens/SmartNotificationsScreen';
+
+import GlossaryScreen
+  from '../screens/GlossaryScreen';
+
 import BaziChartScreen
   from '../screens/BaziChartScreen';
 
@@ -37,6 +85,12 @@ import ZiweiChartScreen
 
 import SettingsScreen
   from '../screens/SettingsScreen';
+
+import UserProfilesScreen
+  from '../screens/UserProfilesScreen';
+
+import UserProfileEditorScreen
+  from '../screens/UserProfileEditorScreen';
 
 import HoroscopeScreen
   from '../screens/HoroscopeScreen';
@@ -58,17 +112,144 @@ export type RootTabParamList = {
 
   LunarCalendar: undefined;
 
-  BaziChart:
+  Today: undefined;
+
+  RecentlyViewed: undefined;
+
+  BookmarksNotes: undefined;
+
+  LifeTimeline:
     | {
-        savedRecordId?: string;
+        profileId?: string;
+        year?: number;
       }
     | undefined;
 
-  ZiweiChart: undefined;
+  AdvancedCompatibility:
+    | {
+        profileAId?: string;
+        profileBId?: string;
+        mode?:
+          | 'love'
+          | 'marriage'
+          | 'friendship'
+          | 'business'
+          | 'parentChild';
+      }
+    | undefined;
+
+  ExpertMode: undefined;
+
+  TimelineEventEditor: {
+    profileId: string;
+    year?: number;
+    eventId?: string;
+  };
+
+  ProfileOverview: {
+    profileId: string;
+  };
+
+  DailyBrief:
+    | {
+        profileId?: string;
+      }
+    | undefined;
+
+  MonthlyReview:
+    | {
+        profileId?: string;
+        year?: number;
+        month?: number;
+      }
+    | undefined;
+
+  SmartNotifications: undefined;
+
+  Glossary:
+    | {
+        termId?: string;
+        category?:
+          | 'foundation'
+          | 'calendar'
+          | 'bazi'
+          | 'ziwei'
+          | 'compatibility'
+          | 'practice';
+      }
+    | undefined;
+
+  ExplainableResult:
+    | {
+        kind: 'today';
+        profileId?: string;
+        date?: string;
+      }
+    | {
+        kind: 'timeline';
+        profileId: string;
+        year: number;
+      }
+    | {
+        kind: 'compatibility';
+        profileAId: string;
+        profileBId: string;
+        mode:
+          | 'love'
+          | 'marriage'
+          | 'friendship'
+          | 'business'
+          | 'parentChild';
+      }
+    | {
+        kind:
+          | 'bazi'
+          | 'ziwei';
+        payload: {
+          title?: string;
+          factors: Array<{
+            code: string;
+            label: string;
+            description?: string;
+            score?: number;
+            rawValue?: string;
+          }>;
+          rawData?: Record<
+            string,
+            string | number | boolean | null
+          >;
+          modelVersion?: string;
+        };
+      };
+
+  BaziChart:
+    | {
+        savedRecordId?: string;
+        profileId?: string;
+      }
+    | undefined;
+
+  ZiweiChart:
+    | {
+        profileId?: string;
+      }
+    | undefined;
+
+  UserProfiles: undefined;
+
+  UserProfileEditor:
+    | {
+        profileId?: string;
+      }
+    | undefined;
 
   Settings: undefined;
 
-  Horoscope: undefined;
+  Horoscope:
+    | {
+        profileId?: string;
+      }
+    | undefined;
 
   BaziHistory: undefined;
 
@@ -83,6 +264,91 @@ const Tab =
   createBottomTabNavigator<
     RootTabParamList
   >();
+
+
+const navigationRef =
+  createNavigationContainerRef<
+    RootTabParamList
+  >();
+
+let pendingNotificationData:
+  Record<string, unknown> | null =
+    null;
+
+function openNotificationRoute(
+  data:
+    Record<string, unknown> | undefined,
+): void {
+  if (!data) {
+    return;
+  }
+
+  if (!navigationRef.isReady()) {
+    pendingNotificationData =
+      data;
+    return;
+  }
+
+  const route =
+    String(
+      data.route ?? '',
+    );
+
+  if (route === 'DailyBrief') {
+    const profileId =
+      String(
+        data.profileId ?? '',
+      );
+
+    if (profileId) {
+      navigationRef.navigate(
+        'DailyBrief',
+        {
+          profileId,
+        },
+      );
+    } else {
+      navigationRef.navigate(
+        'DailyBrief',
+      );
+    }
+
+    return;
+  }
+
+  if (
+    route ===
+    'MonthlyReview'
+  ) {
+    const year =
+      Number(
+        data.year,
+      );
+
+    const month =
+      Number(
+        data.month,
+      );
+
+    navigationRef.navigate(
+      'MonthlyReview',
+      {
+        year:
+          Number.isFinite(
+            year,
+          )
+            ? year
+            : undefined,
+        month:
+          Number.isFinite(
+            month,
+          )
+            ? month
+            : undefined,
+      },
+    );
+  }
+}
 
 type TabIconProps = {
   icon: string;
@@ -115,6 +381,50 @@ function TabIcon({
 export default function RootNavigator() {
   const {t} = useTranslation();
 
+  useEffect(() => {
+    const unsubscribe =
+      notifee.onForegroundEvent(
+        ({
+          type,
+          detail,
+        }) => {
+          if (
+            type ===
+            EventType.PRESS
+          ) {
+            openNotificationRoute(
+              detail.notification
+                ?.data as
+                | Record<
+                    string,
+                    unknown
+                  >
+                | undefined,
+            );
+          }
+        },
+      );
+
+    void notifee
+      .getInitialNotification()
+      .then(initial => {
+        openNotificationRoute(
+          initial?.notification
+            .data as
+            | Record<
+                string,
+                unknown
+              >
+            | undefined,
+        );
+      })
+      .catch(() => {
+        // No initial notification.
+      });
+
+    return unsubscribe;
+  }, []);
+
   /**
    * Tạm thời chưa có PremiumContext.
    *
@@ -124,10 +434,41 @@ export default function RootNavigator() {
    * Sau này thay bằng:
    * const {isPremium} = usePremium();
    */
-  const isPremium = true;
+  const isPremium = false;
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={() => {
+        if (
+          pendingNotificationData
+        ) {
+          const data =
+            pendingNotificationData;
+
+          pendingNotificationData =
+            null;
+
+          openNotificationRoute(
+            data,
+          );
+        }
+      }}
+      onStateChange={state => {
+        const route =
+          state?.routes[
+            state.index
+          ];
+
+        if (!route) {
+          return;
+        }
+
+        void recordRecentlyViewedRoute(
+          route.name,
+          route.params,
+        );
+      }}>
       <View style={styles.root}>
         <Tab.Navigator
           initialRouteName="Home"
@@ -265,6 +606,332 @@ export default function RootNavigator() {
           />
 
           <Tab.Screen
+            name="UserProfiles"
+            component={
+              UserProfilesScreen
+            }
+            options={{
+              title: t(
+                'userProfiles.tabTitle',
+                {
+                  defaultValue:
+                    'Profiles',
+                },
+              ),
+
+              tabBarIcon: ({
+                focused,
+              }) => (
+                <TabIcon
+                  icon="◎"
+                  focused={focused}
+                />
+              ),
+            }}
+          />
+
+          {/*
+           * Các màn hình bên dưới vẫn điều hướng được từ HomeScreen,
+           * nhưng không hiển thị thành nút trên thanh tab.
+           */}
+
+          <Tab.Screen
+            name="Today"
+            component={
+              TodayScreen
+            }
+            options={{
+              title: t(
+                'today.title',
+                {
+                  defaultValue:
+                    'Today',
+                },
+              ),
+
+              tabBarButton:
+                () => null,
+
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+
+          <Tab.Screen
+            name="RecentlyViewed"
+            component={
+              RecentlyViewedScreen
+            }
+            options={{
+              title: t(
+                'insightFeatures.recent.title',
+                {
+                  defaultValue:
+                    'Recently Viewed',
+                },
+              ),
+
+              tabBarButton:
+                () => null,
+
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+
+          <Tab.Screen
+            name="BookmarksNotes"
+            component={
+              BookmarksNotesScreen
+            }
+            options={{
+              title: t(
+                'insightFeatures.library.title',
+                {
+                  defaultValue:
+                    'Bookmarks & Notes',
+                },
+              ),
+
+              tabBarButton:
+                () => null,
+
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+
+          <Tab.Screen
+            name="LifeTimeline"
+            component={
+              LifeTimelineScreen
+            }
+            options={{
+              title: t(
+                'insightFeatures.timeline.title',
+                {
+                  defaultValue:
+                    'Visual Timeline',
+                },
+              ),
+
+              tabBarButton:
+                () => null,
+
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+
+          <Tab.Screen
+            name="AdvancedCompatibility"
+            component={
+              AdvancedCompatibilityScreen
+            }
+            options={{
+              title: t(
+                'insightFeatures.compatibility.title',
+                {
+                  defaultValue:
+                    'Advanced Compatibility',
+                },
+              ),
+
+              tabBarButton:
+                () => null,
+
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+
+          <Tab.Screen
+            name="ExpertMode"
+            component={
+              ExpertModeScreen
+            }
+            options={{
+              title: t(
+                'expertMode.title',
+                {
+                  defaultValue:
+                    'Expert Mode',
+                },
+              ),
+
+              tabBarButton:
+                () => null,
+
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+
+          <Tab.Screen
+            name="TimelineEventEditor"
+            component={
+              TimelineEventEditorScreen
+            }
+            options={{
+              title: t(
+                'timelineEvents.createTitle',
+                {
+                  defaultValue:
+                    'Add Timeline Event',
+                },
+              ),
+
+              tabBarButton:
+                () => null,
+
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+
+          <Tab.Screen
+            name="ProfileOverview"
+            component={
+              ProfileOverviewScreen
+            }
+            options={{
+              title: t(
+                'profileOverview.title',
+                {
+                  defaultValue:
+                    'Profile Overview',
+                },
+              ),
+              tabBarButton:
+                () => null,
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+
+          <Tab.Screen
+            name="DailyBrief"
+            component={
+              DailyBriefScreen
+            }
+            options={{
+              title: t(
+                'dailyBrief.title',
+                {
+                  defaultValue:
+                    'Daily Brief',
+                },
+              ),
+              tabBarButton:
+                () => null,
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+
+          <Tab.Screen
+            name="MonthlyReview"
+            component={
+              MonthlyReviewScreen
+            }
+            options={{
+              title: t(
+                'monthlyReview.title',
+                {
+                  defaultValue:
+                    'Monthly Review',
+                },
+              ),
+              tabBarButton:
+                () => null,
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+
+          <Tab.Screen
+            name="SmartNotifications"
+            component={
+              SmartNotificationsScreen
+            }
+            options={{
+              title: t(
+                'smartNotifications.title',
+                {
+                  defaultValue:
+                    'Widget & Notifications',
+                },
+              ),
+              tabBarButton:
+                () => null,
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+
+          <Tab.Screen
+            name="Glossary"
+            component={
+              GlossaryScreen
+            }
+            options={{
+              title: t(
+                'glossary.title',
+                {
+                  defaultValue:
+                    'Glossary',
+                },
+              ),
+              tabBarButton:
+                () => null,
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+
+          <Tab.Screen
+            name="ExplainableResult"
+            component={
+              ExplainableResultScreen
+            }
+            options={{
+              title: t(
+                'explainable.title',
+                {
+                  defaultValue:
+                    'Why this result?',
+                },
+              ),
+              tabBarButton:
+                () => null,
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+
+          <Tab.Screen
+            name="UserProfileEditor"
+            component={
+              UserProfileEditorScreen
+            }
+            options={{
+              title: t(
+                'userProfiles.createTitle',
+                {
+                  defaultValue:
+                    'Create Profile',
+                },
+              ),
+
+              tabBarButton:
+                () => null,
+
+              tabBarItemStyle:
+                styles.hiddenTab,
+            }}
+          />
+
+          <Tab.Screen
             name="Settings"
             component={
               SettingsScreen
@@ -278,21 +945,13 @@ export default function RootNavigator() {
                 },
               ),
 
-              tabBarIcon: ({
-                focused,
-              }) => (
-                <TabIcon
-                  icon="⚙"
-                  focused={focused}
-                />
-              ),
+              tabBarButton:
+                () => null,
+
+              tabBarItemStyle:
+                styles.hiddenTab,
             }}
           />
-
-          {/*
-           * Các màn hình bên dưới vẫn điều hướng được từ HomeScreen,
-           * nhưng không hiển thị thành nút trên thanh tab.
-           */}
 
           <Tab.Screen
             name="Horoscope"

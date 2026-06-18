@@ -79,7 +79,7 @@ android {
 
     namespace "com.pagodaonline"
     defaultConfig {
-        applicationId "com.nexus.easterndestiny"
+        applicationId "com.nexus.easterndestiny1"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

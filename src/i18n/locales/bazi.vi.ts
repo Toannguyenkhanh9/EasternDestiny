@@ -126,7 +126,7 @@ const bazi = {
   },
 
   stage2: {
-    title: 'Giai đoạn 2: phân tích chuyên sâu',
+    title: 'Phân tích chuyên sâu',
     subtitle:
       'Thân vượng/suy, cách cục, dụng thần, quan hệ can chi và ba lĩnh vực chính.',
 

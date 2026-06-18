@@ -1,4 +1,8 @@
-import React, {useMemo, useState} from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import {
   Alert,
   Pressable,
@@ -12,6 +16,7 @@ import {
 } from 'react-native';
 
 import {useTranslation} from 'react-i18next';
+import {useRoute} from '@react-navigation/native';
 
 import {
   buildHoroscopeLifeInsights,
@@ -32,6 +37,15 @@ import {
   localizeCanChi,
   localizeZodiac,
 } from '../utils/horoscopeValueLocalization';
+
+import {
+  getUserProfile,
+} from '../services/userProfiles';
+
+import {
+  getUserProfileTimeWarningCode,
+  userProfileToHoroscopeFields,
+} from '../services/userProfileAdapters';
 
 type ActivityOption = {
   id: AuspiciousActivity;
@@ -263,6 +277,8 @@ export default function HoroscopeScreen() {
   const {t, i18n} =
     useTranslation();
 
+  const route = useRoute<any>();
+
   const now = useMemo(
     () => new Date(),
     [],
@@ -338,6 +354,85 @@ export default function HoroscopeScreen() {
     i18n.resolvedLanguage ??
     i18n.language ??
     'en';
+
+  useEffect(() => {
+    const profileId =
+      route.params?.profileId as
+        | string
+        | undefined;
+
+    if (!profileId) {
+      return;
+    }
+
+    let active = true;
+
+    getUserProfile(profileId)
+      .then(sharedProfile => {
+        if (
+          !active ||
+          !sharedProfile
+        ) {
+          return;
+        }
+
+        const fields =
+          userProfileToHoroscopeFields(
+            sharedProfile,
+          );
+
+        setDay(fields.day);
+        setMonth(fields.month);
+        setYear(fields.year);
+        setBirthHour(
+          fields.birthHour,
+        );
+        setBirthMinute(
+          fields.birthMinute,
+        );
+        setGender(
+          fields.gender,
+        );
+
+        setProfile(null);
+        setResults([]);
+        setLifeInsights(null);
+        setActiveLifeSection(
+          'love',
+        );
+
+        const warningCode =
+          getUserProfileTimeWarningCode(
+            sharedProfile,
+          );
+
+        if (warningCode) {
+          Alert.alert(
+            t(
+              'userProfiles.profileTimeWarningTitle',
+            ),
+            t(
+              warningCode === 'unknown'
+                ? 'userProfiles.profileTimeUnknownMessage'
+                : 'userProfiles.profileTimeApproximateMessage',
+            ),
+          );
+        }
+      })
+      .catch(error => {
+        console.warn(
+          'Cannot load shared profile for horoscope:',
+          error,
+        );
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    route.params?.profileId,
+    t,
+  ]);
 
   const reasonLabel = (
     key: string,

@@ -21,6 +21,20 @@ import chantCounter
   from './practiceJourney.zh';
   import astrologyHome
   from './astrologyHome.zh';
+  import userProfiles
+  from './userProfiles.zh';
+  import today
+  from './today.zh';
+  import insightFeatures
+  from './insightFeatures.zh';
+  import expertMode
+  from './expertMode.zh';
+  import timelineEvents
+  from './timelineEvents.zh';
+  import engagementFeatures
+  from './engagementFeatures.zh';
+  import glossary
+  from './glossary.zh';
 const zh = {
   common: {
     cancel: '取消',
@@ -995,7 +1009,14 @@ meditation: {
   smartFeatures,
   chantCounter,
   practiceJourney,
-  astrologyHome
+  astrologyHome,
+  userProfiles,
+  today,
+  insightFeatures,
+  expertMode,
+  timelineEvents,
+  ...engagementFeatures,
+    ...glossary,
 } as const;
 
 export default zh;

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 
 import {useTranslation} from 'react-i18next';
-import {useRoute} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import type {TFunction} from 'i18next';
 
 import BaziStage2Details from '../components/BaziStage2Details';
@@ -32,6 +32,25 @@ import {
 } from '../services/baziHistory';
 import {shareBaziChart} from '../services/baziShare';
 
+import {
+  getUserProfile,
+} from '../services/userProfiles';
+
+import {
+  getUserProfileTimeWarningCode,
+  userProfileToBaziForm,
+} from '../services/userProfileAdapters';
+
+import ExpertModeBar
+  from '../components/ExpertModeBar';
+
+import ExpertDetailsCard
+  from '../components/ExpertDetailsCard';
+
+import {
+  useExpertMode,
+} from '../services/expertMode';
+
 import type {
   BaziChart,
   Element,
@@ -42,10 +61,6 @@ import type {
   StrengthLevel,
   TenGod,
 } from '../astrology/bazi';
-import {
-  formatLocalizedPillar,
-  localizeStem,
-} from '../utils/baziLocalization';
 
 const ELEMENTS: Element[] = [
   'wood',
@@ -157,6 +172,14 @@ export default function BaziChartScreen() {
     useTranslation();
 
   const route = useRoute<any>();
+  const navigation =
+    useNavigation<any>();
+
+  const {
+    isExpert,
+    preferences,
+  } =
+    useExpertMode();
 
   const [form, setForm] =
     useState<BaziFormValues>(
@@ -184,6 +207,81 @@ export default function BaziChartScreen() {
     i18n.resolvedLanguage ??
     i18n.language ??
     'en';
+
+  const isVietnamese =
+    language
+      .toLowerCase()
+      .startsWith('vi');
+
+  useEffect(() => {
+    const profileId =
+      route.params?.profileId as
+        | string
+        | undefined;
+
+    const savedRecordId =
+      route.params?.savedRecordId as
+        | string
+        | undefined;
+
+    if (
+      !profileId ||
+      savedRecordId
+    ) {
+      return;
+    }
+
+    let active = true;
+
+    getUserProfile(profileId)
+      .then(profile => {
+        if (!active || !profile) {
+          return;
+        }
+
+        setForm(
+          userProfileToBaziForm(
+            profile,
+          ),
+        );
+
+        setChart(null);
+        setLoadedRecordId(null);
+        setOpenSection('character');
+
+        const warningCode =
+          getUserProfileTimeWarningCode(
+            profile,
+          );
+
+        if (warningCode) {
+          Alert.alert(
+            t(
+              'userProfiles.profileTimeWarningTitle',
+            ),
+            t(
+              warningCode === 'unknown'
+                ? 'userProfiles.profileTimeUnknownMessage'
+                : 'userProfiles.profileTimeApproximateMessage',
+            ),
+          );
+        }
+      })
+      .catch(error => {
+        console.warn(
+          'Cannot load shared profile for BaZi:',
+          error,
+        );
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    route.params?.profileId,
+    route.params?.savedRecordId,
+    t,
+  ]);
 
   useEffect(() => {
     const savedRecordId =
@@ -445,6 +543,14 @@ export default function BaziChartScreen() {
             )}
           </Text>
         </View>
+
+        <ExpertModeBar
+          onOpenSettings={() =>
+            navigation.navigate(
+              'ExpertMode',
+            )
+          }
+        />
 
         <View style={styles.formCard}>
           <Text style={styles.sectionTitle}>
@@ -898,10 +1004,11 @@ export default function BaziChartScreen() {
                         'Nhật chủ',
                     },
                   )}
-value={`${localizeStem(
-  chart.dayMaster,
-  language,
-)} ${chart.dayMaster.han}`}
+                  value={`${
+                    isVietnamese
+                      ? chart.dayMaster.vi
+                      : chart.dayMaster.en
+                  } ${chart.dayMaster.han}`}
                 />
 
                 <SummaryItem
@@ -971,7 +1078,230 @@ value={`${localizeStem(
               )}
             </View>
 
-            <BaziDiagnosticsCard chart={chart} />
+            {isExpert &&
+              preferences.showCalculationDetails && (
+                <ExpertDetailsCard
+                  eyebrow={t(
+                    'expertMode.details.eyebrow',
+                  )}
+                  title={t(
+                    'expertMode.details.title',
+                  )}
+                  subtitle={t(
+                    'expertMode.details.notes.bazi',
+                  )}
+                  showRawCodes={
+                    preferences.showRawCodes
+                  }
+                  rows={[
+                    {
+                      label: t(
+                        'expertMode.details.fields.normalizedTime',
+                      ),
+                      value:
+                        formatLocalDateTime(
+                          chart.normalizedTime
+                            .correctedLocalDateTime,
+                        ),
+                      code:
+                        'normalizedTime.correctedLocalDateTime',
+                    },
+                    {
+                      label: t(
+                        'expertMode.details.fields.timeZone',
+                      ),
+                      value:
+                        chart.input.location
+                          .timeZone,
+                      code:
+                        'input.location.timeZone',
+                    },
+                    {
+                      label: t(
+                        'expertMode.details.fields.correctionMinutes',
+                      ),
+                      value:
+                        String(
+                          chart.normalizedTime
+                            .totalCorrectionMinutes,
+                        ),
+                      code:
+                        'normalizedTime.totalCorrectionMinutes',
+                    },
+                    {
+                      label: t(
+                        'expertMode.details.fields.trueSolarTime',
+                      ),
+                      value:
+                        form.useTrueSolarTime
+                          ? t(
+                              'expertMode.details.values.yes',
+                            )
+                          : t(
+                              'expertMode.details.values.no',
+                            ),
+                      code:
+                        'input.useTrueSolarTime',
+                    },
+                    {
+                      label: t(
+                        'bazi.dayMaster',
+                        {
+                          defaultValue:
+                            'Day Master',
+                        },
+                      ),
+                      value:
+                        isVietnamese
+                          ? chart.dayMaster.vi
+                          : chart.dayMaster.en,
+                      code:
+                        chart.dayMaster.han,
+                    },
+                    {
+                      label: t(
+                        'bazi.dayMasterStrength',
+                        {
+                          defaultValue:
+                            'Day Master strength',
+                        },
+                      ),
+                      value:
+                        strengthLabel(
+                          chart.strength.level,
+                          t,
+                        ),
+                      code:
+                        chart.strength.level,
+                    },
+                  ]}
+                  notes={[
+                    t(
+                      'expertMode.details.notes.bazi',
+                    ),
+                  ]}
+                />
+              )}
+
+            {isExpert &&
+              preferences.showDiagnostics && (
+                <BaziDiagnosticsCard
+                  chart={chart}
+                />
+              )}
+
+            <Pressable
+              style={({pressed}) => [
+                styles.explainResultButton,
+                pressed &&
+                  styles.pressed,
+              ]}
+              onPress={() =>
+                navigation.navigate(
+                  'ExplainableResult',
+                  {
+                    kind: 'bazi',
+                    payload: {
+                      factors: [
+                        {
+                          code:
+                            'dayMaster',
+                          label: t(
+                            'bazi.dayMaster',
+                            {
+                              defaultValue:
+                                'Day Master',
+                            },
+                          ),
+                          description: t(
+                            'explainable.bazi.factorDescriptions.dayMaster',
+                          ),
+                          rawValue:
+                            `${chart.dayMaster.han} · ${
+                              isVietnamese
+                                ? chart.dayMaster.vi
+                                : chart.dayMaster.en
+                            }`,
+                        },
+                        {
+                          code:
+                            'strength',
+                          label: t(
+                            'bazi.dayMasterStrength',
+                            {
+                              defaultValue:
+                                'Day Master strength',
+                            },
+                          ),
+                          description: t(
+                            'explainable.bazi.factorDescriptions.strength',
+                          ),
+                          rawValue:
+                            chart.strength.level,
+                        },
+                        {
+                          code:
+                            'timeCorrection',
+                          label: t(
+                            'bazi.correctedTime',
+                            {
+                              defaultValue:
+                                'Corrected time',
+                            },
+                          ),
+                          description: t(
+                            'explainable.bazi.factorDescriptions.timeCorrection',
+                          ),
+                          rawValue:
+                            `${chart.normalizedTime.totalCorrectionMinutes}`,
+                        },
+                        {
+                          code:
+                            'favorableElements',
+                          label: t(
+                            'bazi.analysis.favorable',
+                            {
+                              defaultValue:
+                                'Favorable elements',
+                            },
+                          ),
+                          description: t(
+                            'explainable.bazi.factorDescriptions.favorableElements',
+                          ),
+                          rawValue:
+                            chart.usefulElements.favorable.join(
+                              ',',
+                            ),
+                        },
+                      ],
+                      rawData: {
+                        timeZone:
+                          chart.input.location.timeZone,
+                        totalCorrectionMinutes:
+                          chart.normalizedTime.totalCorrectionMinutes,
+                        useTrueSolarTime:
+                          form.useTrueSolarTime,
+                        dayMaster:
+                          chart.dayMaster.han,
+                        strength:
+                          chart.strength.level,
+                      },
+                      modelVersion:
+                        'bazi-engine-current',
+                    },
+                  },
+                )
+              }>
+              <Text
+                style={
+                  styles.explainResultButtonText
+                }>
+                ?{' '}
+                {t(
+                  'explainable.whyThisResult',
+                )}
+              </Text>
+            </Pressable>
 
             <View style={styles.stage3ActionCard}>
               <Pressable
@@ -1016,13 +1346,17 @@ value={`${localizeStem(
 
               <View style={styles.pillarsRow}>
                 {PILLAR_ORDER.map(kind => (
-<PillarCard
-  key={kind}
-  kind={kind}
-  pillar={chart.pillars[kind]}
-  language={language}
-  t={t}
-/>
+                  <PillarCard
+                    key={kind}
+                    kind={kind}
+                    pillar={
+                      chart.pillars[
+                        kind
+                      ]
+                    }
+                    isVietnamese={isVietnamese}
+                    t={t}
+                  />
                 ))}
               </View>
             </View>
@@ -1117,10 +1451,12 @@ value={`${localizeStem(
               </View>
             </View>
 
-            <BaziStage2Details
-              chart={chart}
-              language={language}
-            />
+            {isExpert && (
+              <BaziStage2Details
+                chart={chart}
+                language={language}
+              />
+            )}
 
             <View style={styles.resultSection}>
               <Text style={styles.resultSectionTitle}>
@@ -1204,12 +1540,15 @@ value={`${localizeStem(
                         )}
                       </Text>
 
-<Text style={styles.luckPillar}>
-  {formatLocalizedPillar(
-    item.pillar,
-    language,
-  )}
-</Text>
+                      <Text style={styles.luckPillar}>
+                        {isVietnamese
+                          ? item.pillar.stem.vi
+                          : item.pillar.stem.en}
+                        {' '}
+                        {isVietnamese
+                          ? item.pillar.branch.vi
+                          : item.pillar.branch.en}
+                      </Text>
 
                       <Text style={styles.luckYears}>
                         {item.approximateStartYear}
@@ -1275,20 +1614,23 @@ function SummaryItem({
 type PillarCardProps = {
   kind: PillarKind;
   pillar: Pillar;
-  language: string;
+  isVietnamese: boolean;
   t: TFunction;
 };
 
 function PillarCard({
   kind,
   pillar,
-  language,
+  isVietnamese,
   t,
 }: PillarCardProps) {
   return (
     <View style={styles.pillarCard}>
       <Text style={styles.pillarKind}>
-        {pillarKindLabel(kind, t)}
+        {pillarKindLabel(
+          kind,
+          t,
+        )}
       </Text>
 
       <Text style={styles.pillarHan}>
@@ -1297,10 +1639,13 @@ function PillarCard({
       </Text>
 
       <Text style={styles.pillarVi}>
-        {formatLocalizedPillar(
-          pillar,
-          language,
-        )}
+        {isVietnamese
+          ? pillar.stem.vi
+          : pillar.stem.en}
+        {' '}
+        {isVietnamese
+          ? pillar.branch.vi
+          : pillar.branch.en}
       </Text>
 
       <Text style={styles.pillarTenGod}>
@@ -2267,6 +2612,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 17,
     marginTop: 5,
+  },
+
+  explainResultButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 46,
+    backgroundColor: '#E8EDF3',
+    borderRadius: 14,
+    marginHorizontal: 16,
+    marginTop: 12,
+  },
+
+  explainResultButtonText: {
+    color: '#17243A',
+    fontSize: 10,
+    fontWeight: '900',
   },
 
   stage3ActionCard: {

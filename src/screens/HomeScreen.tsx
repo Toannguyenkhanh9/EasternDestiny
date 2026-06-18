@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useMemo,
 } from 'react';
 
@@ -16,6 +17,10 @@ import type {
 } from '@react-navigation/bottom-tabs';
 
 import {
+  useFocusEffect,
+} from '@react-navigation/native';
+
+import {
   SafeAreaView,
 } from 'react-native-safe-area-context';
 
@@ -27,18 +32,38 @@ import type {
   RootTabParamList,
 } from '../navigation/RootNavigator';
 
+import {
+  isHomeWidgetNativeAvailable,
+  refreshHomeWidget,
+} from '../services/homeWidget';
+
+import {
+  refreshSmartNotificationsIfNeeded,
+} from '../services/smartNotifications';
+
 type Props = BottomTabScreenProps<
   RootTabParamList,
   'Home'
 >;
 
 type HomeRoute =
+  | 'Today'
   | 'LunarCalendar'
   | 'BuddhistCalendar'
   | 'FortuneStick'
   | 'Horoscope'
   | 'BaziChart'
   | 'BaziHistory'
+  | 'UserProfiles'
+  | 'RecentlyViewed'
+  | 'BookmarksNotes'
+  | 'LifeTimeline'
+  | 'AdvancedCompatibility'
+  | 'ExpertMode'
+  | 'DailyBrief'
+  | 'MonthlyReview'
+  | 'SmartNotifications'
+  | 'Glossary'
   | 'BaziStage4'
   | 'ZiweiChart'
   | 'Settings';
@@ -197,6 +222,26 @@ export default function HomeScreen({
     [language],
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      if (
+        isHomeWidgetNativeAvailable()
+      ) {
+        void refreshHomeWidget(
+          language,
+        ).catch(() =>
+          false,
+        );
+      }
+
+      void refreshSmartNotificationsIfNeeded(
+        language,
+      ).catch(() =>
+        false,
+      );
+    }, [language]),
+  );
+
   const navigateTo = (
     route: HomeRoute,
   ) => {
@@ -254,6 +299,17 @@ export default function HomeScreen({
 
   const calendarCards: HomeCard[] = [
     {
+      route: 'Today',
+      icon: '☀',
+      title: t(
+        'today.title',
+      ),
+      subtitle: t(
+        'today.homeSubtitle',
+      ),
+      accent: '#F0DFBC',
+    },
+    {
       route: 'LunarCalendar',
       icon: '月',
       title: t(
@@ -279,6 +335,17 @@ export default function HomeScreen({
 
   const profileCards: HomeCard[] = [
     {
+      route: 'UserProfiles',
+      icon: '◎',
+      title: t(
+        'userProfiles.title',
+      ),
+      subtitle: t(
+        'userProfiles.subtitle',
+      ),
+      accent: '#D8E3EE',
+    },
+    {
       route: 'BaziHistory',
       icon: '冊',
       title: t(
@@ -299,6 +366,108 @@ export default function HomeScreen({
         'astrologyHome.cards.fortuneSubtitle',
       ),
       accent: '#F0D6C4',
+    },
+  ];
+
+  const insightCards: HomeCard[] = [
+    {
+      route: 'RecentlyViewed',
+      icon: '◷',
+      title: t(
+        'insightFeatures.home.cards.recentTitle',
+      ),
+      subtitle: t(
+        'insightFeatures.home.cards.recentSubtitle',
+      ),
+      accent: '#DCE5EE',
+    },
+    {
+      route: 'BookmarksNotes',
+      icon: '☆',
+      title: t(
+        'insightFeatures.home.cards.libraryTitle',
+      ),
+      subtitle: t(
+        'insightFeatures.home.cards.librarySubtitle',
+      ),
+      accent: '#EEE1C9',
+    },
+    {
+      route: 'LifeTimeline',
+      icon: '⌁',
+      title: t(
+        'insightFeatures.home.cards.timelineTitle',
+      ),
+      subtitle: t(
+        'insightFeatures.home.cards.timelineSubtitle',
+      ),
+      accent: '#DCE6D8',
+    },
+    {
+      route: 'AdvancedCompatibility',
+      icon: '◉',
+      title: t(
+        'insightFeatures.home.cards.compatibilityTitle',
+      ),
+      subtitle: t(
+        'insightFeatures.home.cards.compatibilitySubtitle',
+      ),
+      accent: '#E7DBEA',
+    },
+    {
+      route: 'ExpertMode',
+      icon: '∑',
+      title: t(
+        'expertMode.home.title',
+      ),
+      subtitle: t(
+        'expertMode.home.subtitle',
+      ),
+      accent: '#D9E0EA',
+    },
+    {
+      route: 'DailyBrief',
+      icon: '☀',
+      title: t(
+        'dailyBrief.title',
+      ),
+      subtitle: t(
+        'dailyBrief.homeSubtitle',
+      ),
+      accent: '#F2E3BF',
+    },
+    {
+      route: 'MonthlyReview',
+      icon: '◫',
+      title: t(
+        'monthlyReview.title',
+      ),
+      subtitle: t(
+        'monthlyReview.homeSubtitle',
+      ),
+      accent: '#DDE8E4',
+    },
+    {
+      route: 'SmartNotifications',
+      icon: '◉',
+      title: t(
+        'smartNotifications.title',
+      ),
+      subtitle: t(
+        'smartNotifications.homeSubtitle',
+      ),
+      accent: '#E6DDED',
+    },
+    {
+      route: 'Glossary',
+      icon: '字',
+      title: t(
+        'glossary.title',
+      ),
+      subtitle: t(
+        'glossary.homeSubtitle',
+      ),
+      accent: '#EDE2CF',
     },
   ];
 
@@ -460,7 +629,7 @@ export default function HomeScreen({
               ]}
               onPress={() =>
                 navigateTo(
-                  'LunarCalendar',
+                  'Today',
                 )
               }>
               <Text
@@ -468,7 +637,7 @@ export default function HomeScreen({
                   styles.todayButtonText
                 }>
                 {t(
-                  'astrologyHome.viewCalendar',
+                  'today.openToday',
                 )}
               </Text>
             </Pressable>
@@ -554,6 +723,20 @@ export default function HomeScreen({
             'astrologyHome.profileSubtitle',
           )}
           cards={profileCards}
+          onPress={navigateTo}
+        />
+
+        <HomeSection
+          eyebrow={t(
+            'insightFeatures.home.eyebrow',
+          )}
+          title={t(
+            'insightFeatures.home.title',
+          )}
+          subtitle={t(
+            'insightFeatures.home.subtitle',
+          )}
+          cards={insightCards}
           onPress={navigateTo}
         />
 

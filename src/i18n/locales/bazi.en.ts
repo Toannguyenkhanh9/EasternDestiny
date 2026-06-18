@@ -126,7 +126,7 @@ const bazi = {
   },
 
   stage2: {
-    title: 'Stage 2: Detailed Analysis',
+    title: 'Detailed Analysis',
     subtitle:
       'Day Master strength, chart structure, useful elements, stem-branch relations, and three major life domains.',
 

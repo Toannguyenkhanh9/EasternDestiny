@@ -15,12 +15,26 @@ import {
   premiumContent,
   smartFeatures,
 } from './spiritualFeatures10_13.vi';
+import expertMode
+  from './expertMode.vi';
 import chantCounter
   from './chantCounter.vi';
   import practiceJourney
   from './practiceJourney.vi';
   import astrologyHome
   from './astrologyHome.vi';
+  import userProfiles
+  from './userProfiles.vi';
+  import today
+  from './today.vi';
+  import insightFeatures
+  from './insightFeatures.vi';
+  import timelineEvents
+  from './timelineEvents.vi';
+  import engagementFeatures
+  from './engagementFeatures.vi';
+  import glossary
+  from './glossary.vi';
 const vi = {
   common: {
     cancel: 'Hủy',
@@ -995,7 +1009,14 @@ meditation: {
   smartFeatures,
   chantCounter,
   practiceJourney,
-  astrologyHome
+  astrologyHome,
+  userProfiles,
+  today,
+  insightFeatures,
+  expertMode,
+  timelineEvents,
+  ...engagementFeatures,
+    ...glossary,
 } as const;
 
 export default vi;

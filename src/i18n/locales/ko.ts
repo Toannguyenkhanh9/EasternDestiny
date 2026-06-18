@@ -21,6 +21,20 @@ import chantCounter
   from './practiceJourney.ko';
   import astrologyHome
   from './astrologyHome.ko';
+  import userProfiles
+  from './userProfiles.ko';
+  import today
+  from './today.ko';
+  import insightFeatures
+  from './insightFeatures.ko';
+  import expertMode
+  from './expertMode.ja';
+  import timelineEvents
+  from './timelineEvents.ko';
+  import engagementFeatures
+  from './engagementFeatures.ko';
+  import glossary
+  from './glossary.ko';
 const ko = {
   common: {
     cancel: '취소',
@@ -995,7 +1009,14 @@ meditation: {
   smartFeatures,
   chantCounter,
   practiceJourney,
-  astrologyHome
+  astrologyHome,
+  userProfiles,
+  today,
+  insightFeatures,
+  expertMode,
+  timelineEvents,
+  ...engagementFeatures,
+    ...glossary,
 } as const;
 
 export default ko;

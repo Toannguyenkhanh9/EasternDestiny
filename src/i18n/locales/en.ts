@@ -21,6 +21,20 @@ import chantCounter
   from './practiceJourney.en';
   import astrologyHome
   from './astrologyHome.en';
+  import userProfiles
+  from './userProfiles.en';
+  import today
+  from './today.en';
+  import insightFeatures
+  from './insightFeatures.en';
+  import expertMode
+  from './expertMode.en';
+  import timelineEvents
+  from './timelineEvents.en';
+  import engagementFeatures
+  from './engagementFeatures.en';
+  import glossary
+  from './glossary.en';
 const en = {
   common: {
     cancel: 'Cancel',
@@ -995,7 +1009,14 @@ meditation: {
   smartFeatures,
   chantCounter,
   practiceJourney,
-  astrologyHome
+  astrologyHome,
+  userProfiles,
+  today,
+  insightFeatures,
+  expertMode,
+  timelineEvents,
+  ...engagementFeatures,
+    ...glossary,
 } as const;
 
 export default en;

@@ -1,4 +1,8 @@
-import React, {useMemo, useState} from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import {
   Alert,
   Pressable,
@@ -11,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import {useTranslation} from 'react-i18next';
+import {useNavigation, useRoute} from '@react-navigation/native';
 
 import ZiweiStage3Details from '../components/ZiweiStage3Details';
 import ZiweiStage4Details from '../components/ZiweiStage4Details';
@@ -21,6 +26,25 @@ import {
   calculateZiweiFromForm,
   type ZiweiFormValues,
 } from '../services/ziweiEngine';
+
+import {
+  getUserProfile,
+} from '../services/userProfiles';
+
+import {
+  getUserProfileTimeWarningCode,
+  userProfileToZiweiForm,
+} from '../services/userProfileAdapters';
+
+import ExpertModeBar
+  from '../components/ExpertModeBar';
+
+import ExpertDetailsCard
+  from '../components/ExpertDetailsCard';
+
+import {
+  useExpertMode,
+} from '../services/expertMode';
 
 import type {
   EarthlyBranchId,
@@ -53,9 +77,111 @@ function createDefaultForm(): ZiweiFormValues {
 
 export default function ZiweiChartScreen() {
   const {t} = useTranslation();
-  const [form, setForm] = useState<ZiweiFormValues>(createDefaultForm());
-  const [chart, setChart] = useState<ZiweiChartStage6 | null>(null);
-  const [isCalculating, setIsCalculating] = useState(false);
+  const route = useRoute<any>();
+  const navigation =
+    useNavigation<any>();
+
+  const {
+    isExpert,
+    preferences,
+  } =
+    useExpertMode();
+
+  const [form, setForm] =
+    useState<ZiweiFormValues>(
+      createDefaultForm(),
+    );
+
+  const [chart, setChart] =
+    useState<ZiweiChartStage6 | null>(
+      null,
+    );
+
+  const [isCalculating, setIsCalculating] =
+    useState(false);
+
+  useEffect(() => {
+    const profileId =
+      route.params?.profileId as
+        | string
+        | undefined;
+
+    if (!profileId) {
+      return;
+    }
+
+    let active = true;
+
+    getUserProfile(profileId)
+      .then(profile => {
+        if (!active || !profile) {
+          return;
+        }
+
+        try {
+          setForm(
+            userProfileToZiweiForm(
+              profile,
+            ),
+          );
+
+          setChart(null);
+
+          const warningCode =
+            getUserProfileTimeWarningCode(
+              profile,
+            );
+
+          if (warningCode) {
+            Alert.alert(
+              t(
+                'userProfiles.profileTimeWarningTitle',
+              ),
+              t(
+                warningCode === 'unknown'
+                  ? 'userProfiles.profileTimeUnknownMessage'
+                  : 'userProfiles.profileTimeApproximateMessage',
+              ),
+            );
+          }
+        } catch (error) {
+          const code =
+            error instanceof Error
+              ? error.message
+              : '';
+
+          if (
+            code ===
+            'ZIWEI_GENDER_REQUIRED'
+          ) {
+            Alert.alert(
+              t(
+                'userProfiles.ziweiGenderTitle',
+              ),
+              t(
+                'userProfiles.ziweiGenderMessage',
+              ),
+            );
+            return;
+          }
+
+          throw error;
+        }
+      })
+      .catch(error => {
+        console.warn(
+          'Cannot load shared profile for Zi Wei:',
+          error,
+        );
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    route.params?.profileId,
+    t,
+  ]);
 
   const palaceByBranch = useMemo(() => {
     const map = new Map<EarthlyBranchId, ZiweiPalace>();
@@ -106,6 +232,14 @@ export default function ZiweiChartScreen() {
           <Text style={styles.title}>{t('ziwei.title')}</Text>
           <Text style={styles.subtitle}>{t('ziwei.subtitle')}</Text>
         </View>
+
+        <ExpertModeBar
+          onOpenSettings={() =>
+            navigation.navigate(
+              'ExpertMode',
+            )
+          }
+        />
 
         <View style={styles.formCard}>
           <Text style={styles.sectionTitle}>{t('ziwei.birthInformation')}</Text>
@@ -508,24 +642,266 @@ export default function ZiweiChartScreen() {
               </View>
             </View>
 
-            <ZiweiStage3Details chart={chart} />
+            {isExpert &&
+              preferences.showCalculationDetails && (
+                <ExpertDetailsCard
+                  eyebrow={t(
+                    'expertMode.details.eyebrow',
+                  )}
+                  title={t(
+                    'expertMode.details.title',
+                  )}
+                  subtitle={t(
+                    'expertMode.details.notes.ziwei',
+                  )}
+                  showRawCodes={
+                    preferences.showRawCodes
+                  }
+                  rows={[
+                    {
+                      label: t(
+                        'expertMode.details.fields.timeZone',
+                      ),
+                      value:
+                        chart.input.location
+                          .timeZone,
+                      code:
+                        'input.location.timeZone',
+                    },
+                    {
+                      label: t(
+                        'expertMode.details.fields.lifePalace',
+                      ),
+                      value: t(
+                        `ziwei.branches.${chart.lifePalaceBranchId}`,
+                      ),
+                      code:
+                        chart.lifePalaceBranchId,
+                    },
+                    {
+                      label: t(
+                        'expertMode.details.fields.bodyPalace',
+                      ),
+                      value: t(
+                        `ziwei.branches.${chart.bodyPalaceBranchId}`,
+                      ),
+                      code:
+                        chart.bodyPalaceBranchId,
+                    },
+                    {
+                      label: t(
+                        'expertMode.details.fields.bureau',
+                      ),
+                      value: t(
+                        `ziwei.bureaus.${chart.bureau.element}`,
+                        {
+                          number:
+                            chart.bureau.number,
+                        },
+                      ),
+                      code:
+                        `${chart.bureau.element}:${chart.bureau.number}`,
+                    },
+                    {
+                      label: t(
+                        'expertMode.details.fields.mainStarCount',
+                      ),
+                      value:
+                        String(
+                          chart.mainStars.length,
+                        ),
+                      code:
+                        'mainStars.length',
+                    },
+                    {
+                      label: t(
+                        'expertMode.details.fields.auxiliaryStarCount',
+                      ),
+                      value:
+                        String(
+                          chart.auxiliaryStars.length,
+                        ),
+                      code:
+                        'auxiliaryStars.length',
+                    },
+                    {
+                      label: t(
+                        'expertMode.details.fields.diagnosticsCount',
+                      ),
+                      value:
+                        String(
+                          chart.diagnostics.length,
+                        ),
+                      code:
+                        'diagnostics.length',
+                    },
+                  ]}
+                  notes={[
+                    t(
+                      'expertMode.details.notes.ziwei',
+                    ),
+                  ]}
+                />
+              )}
 
-            <ZiweiStage4Details chart={chart} />
+            <Pressable
+              style={({pressed}) => [
+                styles.explainResultButton,
+                pressed &&
+                  styles.pressed,
+              ]}
+              onPress={() =>
+                navigation.navigate(
+                  'ExplainableResult',
+                  {
+                    kind: 'ziwei',
+                    payload: {
+                      factors: [
+                        {
+                          code:
+                            'lifePalace',
+                          label: t(
+                            'expertMode.details.fields.lifePalace',
+                          ),
+                          description: t(
+                            'explainable.ziwei.factorDescriptions.lifePalace',
+                          ),
+                          rawValue:
+                            chart.lifePalaceBranchId,
+                        },
+                        {
+                          code:
+                            'bodyPalace',
+                          label: t(
+                            'expertMode.details.fields.bodyPalace',
+                          ),
+                          description: t(
+                            'explainable.ziwei.factorDescriptions.bodyPalace',
+                          ),
+                          rawValue:
+                            chart.bodyPalaceBranchId,
+                        },
+                        {
+                          code:
+                            'bureau',
+                          label: t(
+                            'expertMode.details.fields.bureau',
+                          ),
+                          description: t(
+                            'explainable.ziwei.factorDescriptions.bureau',
+                          ),
+                          rawValue:
+                            `${chart.bureau.element}:${chart.bureau.number}`,
+                        },
+                        {
+                          code:
+                            'mainStars',
+                          label: t(
+                            'expertMode.details.fields.mainStarCount',
+                          ),
+                          description: t(
+                            'explainable.ziwei.factorDescriptions.mainStars',
+                          ),
+                          rawValue:
+                            String(
+                              chart.mainStars.length,
+                            ),
+                        },
+                        {
+                          code:
+                            'auxiliaryStars',
+                          label: t(
+                            'expertMode.details.fields.auxiliaryStarCount',
+                          ),
+                          description: t(
+                            'explainable.ziwei.factorDescriptions.auxiliaryStars',
+                          ),
+                          rawValue:
+                            String(
+                              chart.auxiliaryStars.length,
+                            ),
+                        },
+                      ],
+                      rawData: {
+                        timeZone:
+                          chart.input.location.timeZone,
+                        lifePalace:
+                          chart.lifePalaceBranchId,
+                        bodyPalace:
+                          chart.bodyPalaceBranchId,
+                        bureau:
+                          `${chart.bureau.element}:${chart.bureau.number}`,
+                        mainStarCount:
+                          chart.mainStars.length,
+                        auxiliaryStarCount:
+                          chart.auxiliaryStars.length,
+                        diagnosticsCount:
+                          chart.diagnostics.length,
+                      },
+                      modelVersion:
+                        'ziwei-engine-current',
+                    },
+                  },
+                )
+              }>
+              <Text
+                style={
+                  styles.explainResultButtonText
+                }>
+                ?{' '}
+                {t(
+                  'explainable.whyThisResult',
+                )}
+              </Text>
+            </Pressable>
 
-            <ZiweiStage5Details chart={chart} />
+            {isExpert && (
+              <>
+                <ZiweiStage3Details
+                  chart={chart}
+                />
 
-            <ZiweiStage6Details chart={chart} />
+                <ZiweiStage4Details
+                  chart={chart}
+                />
 
-            {chart.diagnostics.length > 0 && (
-              <View style={styles.noticeCard}>
-                <Text style={styles.noticeTitle}>{t('ziwei.diagnosticsTitle')}</Text>
-                {chart.diagnostics.map(code => (
-                  <Text key={code} style={styles.noticeText}>
-                    • {t(`ziwei.diagnostics.${code}`)}
-                  </Text>
-                ))}
-              </View>
+                <ZiweiStage5Details
+                  chart={chart}
+                />
+
+                <ZiweiStage6Details
+                  chart={chart}
+                />
+              </>
             )}
+
+            {isExpert &&
+              preferences.showDiagnostics &&
+              chart.diagnostics.length >
+                0 && (
+                <View style={styles.noticeCard}>
+                  <Text style={styles.noticeTitle}>
+                    {t(
+                      'ziwei.diagnosticsTitle',
+                    )}
+                  </Text>
+
+                  {chart.diagnostics.map(
+                    code => (
+                      <Text
+                        key={code}
+                        style={
+                          styles.noticeText
+                        }>
+                        •{' '}
+                        {t(
+                          `ziwei.diagnostics.${code}`,
+                        )}
+                      </Text>
+                    ),
+                  )}
+                </View>
+              )}
 
             <View style={styles.disclaimerCard}>
               <Text style={styles.disclaimerText}>{t('ziwei.notice')}</Text>
@@ -701,6 +1077,8 @@ const styles = StyleSheet.create({
   legendChip: {backgroundColor: '#F7DED2', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 5, marginRight: 6, marginBottom: 6},
   legendChipAlt: {backgroundColor: '#F4E7BD', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 5, marginRight: 6, marginBottom: 6},
   legendChipText: {color: '#5B3A27', fontSize: 10, fontWeight: '800'},
+  explainResultButton: {alignItems: 'center', justifyContent: 'center', minHeight: 46, backgroundColor: '#E8EDF3', borderRadius: 14, marginTop: 14},
+  explainResultButtonText: {color: '#17243A', fontSize: 10, fontWeight: '900'},
   noticeCard: {backgroundColor: '#FFF1D6', borderWidth: 1, borderColor: '#D9B678', borderRadius: 16, padding: 14, marginTop: 15},
   noticeTitle: {color: BROWN, fontSize: 14, fontWeight: '900'},
   noticeText: {color: '#755D49', fontSize: 11, lineHeight: 17, marginTop: 5},
