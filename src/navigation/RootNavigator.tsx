@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 
 import {
   Platform,
@@ -28,6 +28,12 @@ import notifee, {
 import {
   recordRecentlyViewedRoute,
 } from '../services/recentlyViewed';
+
+import {
+  maybeShowInterstitialForRouteChange,
+  preloadAds,
+  shouldShowBannerAds,
+} from '../services/adController';
 
 import SmallBannerAd
   from '../components/SmallBannerAd';
@@ -275,6 +281,9 @@ let pendingNotificationData:
   Record<string, unknown> | null =
     null;
 
+let lastTrackedRouteName:
+  string | undefined;
+
 function openNotificationRoute(
   data:
     Record<string, unknown> | undefined,
@@ -381,6 +390,31 @@ function TabIcon({
 export default function RootNavigator() {
   const {t} = useTranslation();
 
+  const [showAdsBanner, setShowAdsBanner] =
+    useState(false);
+
+  useEffect(() => {
+    let active = false;
+
+    void shouldShowBannerAds()
+      .then(result => {
+        if (active) {
+          setShowAdsBanner(result);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setShowAdsBanner(false);
+        }
+      });
+
+    void preloadAds();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   useEffect(() => {
     const unsubscribe =
       notifee.onForegroundEvent(
@@ -425,21 +459,14 @@ export default function RootNavigator() {
     return unsubscribe;
   }, []);
 
-  /**
-   * Tạm thời chưa có PremiumContext.
-   *
-   * false: hiển thị banner.
-   * true: ẩn banner.
-   *
-   * Sau này thay bằng:
-   * const {isPremium} = usePremium();
-   */
-  const isPremium = false;
-
   return (
     <NavigationContainer
       ref={navigationRef}
       onReady={() => {
+        lastTrackedRouteName =
+          navigationRef.getCurrentRoute()
+            ?.name;
+
         if (
           pendingNotificationData
         ) {
@@ -464,8 +491,19 @@ export default function RootNavigator() {
           return;
         }
 
+        const nextRouteName =
+          route.name;
+
+        void maybeShowInterstitialForRouteChange(
+          lastTrackedRouteName,
+          nextRouteName,
+        );
+
+        lastTrackedRouteName =
+          nextRouteName;
+
         void recordRecentlyViewedRoute(
-          route.name,
+          nextRouteName,
           route.params,
         );
       }}>
@@ -474,13 +512,15 @@ export default function RootNavigator() {
           initialRouteName="Home"
           tabBar={props => (
             <View style={styles.bottomArea}>
-              {!isPremium && (
+              {showAdsBanner && (
                 <View
                   style={
                     styles.bannerContainer
                   }>
                   <SmallBannerAd
-                    visible={!isPremium}
+                    visible={
+                      showAdsBanner
+                    }
                   />
                 </View>
               )}

@@ -35,6 +35,8 @@ import chantCounter
   from './engagementFeatures.en';
   import glossary
   from './glossary.en';
+  import adsFeatures
+  from './adsFeatures.en';
 const en = {
   common: {
     cancel: 'Cancel',
@@ -1017,6 +1019,7 @@ meditation: {
   timelineEvents,
   ...engagementFeatures,
     ...glossary,
+     ...adsFeatures,
 } as const;
 
 export default en;

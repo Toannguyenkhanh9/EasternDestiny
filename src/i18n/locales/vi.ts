@@ -35,6 +35,8 @@ import chantCounter
   from './engagementFeatures.vi';
   import glossary
   from './glossary.vi';
+  import adsFeatures
+  from './adsFeatures.vi';
 const vi = {
   common: {
     cancel: 'Hủy',
@@ -1017,6 +1019,7 @@ meditation: {
   timelineEvents,
   ...engagementFeatures,
     ...glossary,
+     ...adsFeatures,
 } as const;
 
 export default vi;

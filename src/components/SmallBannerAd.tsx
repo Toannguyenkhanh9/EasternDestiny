@@ -1,75 +1,80 @@
-import React from 'react';
+import React, {
+  useEffect,
+  useState,
+} from 'react';
+
 import {
-  Platform,
-  StyleSheet,
   View,
 } from 'react-native';
 
 import {
   BannerAd,
   BannerAdSize,
-  TestIds,
 } from 'react-native-google-mobile-ads';
+
+import {
+  ADS_CONFIG,
+} from '../config/adsConfig';
+
+import {
+  shouldShowBannerAds,
+} from '../services/adController';
 
 type Props = {
   visible?: boolean;
 };
 
-/**
- * Thay hai ID production bên dưới bằng Banner Unit ID thật.
- *
- * Android và iOS phải dùng hai quảng cáo riêng.
- */
-const androidBannerUnitId =
-  'ca-app-pub-XXXXXXXXXXXXXXXX/ANDROID_BANNER_ID';
-
-const iosBannerUnitId =
-  'ca-app-pub-XXXXXXXXXXXXXXXX/IOS_BANNER_ID';
-
-const productionBannerUnitId =
-  Platform.select({
-    android: androidBannerUnitId,
-    ios: iosBannerUnitId,
-  }) ?? androidBannerUnitId;
-
-const bannerUnitId = __DEV__
-  ? TestIds.BANNER
-  : productionBannerUnitId;
-
 export default function SmallBannerAd({
   visible = true,
 }: Props) {
-  if (!visible) {
+  const [canShow, setCanShow] =
+    useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    shouldShowBannerAds()
+      .then(result => {
+        if (active) {
+          setCanShow(
+            visible && result,
+          );
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setCanShow(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [visible]);
+
+  if (
+    !visible ||
+    !canShow ||
+    !ADS_CONFIG.enabled ||
+    !ADS_CONFIG.bannerEnabled
+  ) {
     return null;
   }
 
   return (
-    <View style={styles.container}>
+    <View>
       <BannerAd
-        unitId={bannerUnitId}
-        size={BannerAdSize.BANNER}
+        unitId={
+          ADS_CONFIG.adUnitIds.banner
+        }
+        size={
+          BannerAdSize.ANCHORED_ADAPTIVE_BANNER
+        }
         requestOptions={{
-          requestNonPersonalizedAdsOnly: true,
-        }}
-        onAdLoaded={() => {
-          console.log('Banner AdMob đã tải');
-        }}
-        onAdFailedToLoad={error => {
-          console.warn(
-            'Không thể tải Banner AdMob:',
-            error,
-          );
+          requestNonPersonalizedAdsOnly:
+            true,
         }}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF9EF',
-  },
-});

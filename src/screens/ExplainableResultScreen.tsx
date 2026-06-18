@@ -45,6 +45,9 @@ import {
   useExpertMode,
 } from '../services/expertMode';
 
+import RewardedFeatureGate
+  from '../components/RewardedFeatureGate';
+
 type Props = BottomTabScreenProps<
   RootTabParamList,
   'ExplainableResult'
@@ -376,6 +379,24 @@ export default function ExplainableResultScreen({
           </View>
         </View>
 
+        <RewardedFeatureGate
+          gateKey="explainableResults"
+          featureKey={`explainable:${result.kind}`}
+          title={t(
+            'ads.explainableRewardTitle',
+            {
+              defaultValue:
+                'Unlock full explanation',
+            },
+          )}
+          message={t(
+            'ads.explainableRewardMessage',
+            {
+              defaultValue:
+                'Watch one rewarded ad to see all factors, weights, method details, and raw technical data for 24 hours.',
+            },
+          )}>
+
         <View style={styles.section}>
           <Text style={styles.sectionEyebrow}>
             {t(
@@ -600,6 +621,8 @@ export default function ExplainableResultScreen({
               </View>
             </View>
           )}
+
+        </RewardedFeatureGate>
 
         <View style={styles.limitCard}>
           <Text style={styles.limitTitle}>

@@ -35,6 +35,8 @@ import chantCounter
   from './engagementFeatures.ko';
   import glossary
   from './glossary.ko';
+  import adsFeatures
+  from './adsFeatures.ko';
 const ko = {
   common: {
     cancel: '취소',
@@ -1017,6 +1019,7 @@ meditation: {
   timelineEvents,
   ...engagementFeatures,
     ...glossary,
+     ...adsFeatures,
 } as const;
 
 export default ko;

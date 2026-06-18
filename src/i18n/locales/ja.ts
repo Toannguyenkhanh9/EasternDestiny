@@ -35,6 +35,8 @@ import chantCounter
   from './engagementFeatures.ja';
   import glossary
   from './glossary.ja';
+  import adsFeatures
+  from './adsFeatures.ja';
 const ja = {
   common: {
     cancel: 'キャンセル',
@@ -1017,6 +1019,7 @@ meditation: {
   timelineEvents,
   ...engagementFeatures,
     ...glossary,
+     ...adsFeatures,
 } as const;
 
 export default ja;

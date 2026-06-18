@@ -35,6 +35,8 @@ import chantCounter
   from './engagementFeatures.zh';
   import glossary
   from './glossary.zh';
+  import adsFeatures
+  from './adsFeatures.zh';
 const zh = {
   common: {
     cancel: '取消',
@@ -1017,6 +1019,7 @@ meditation: {
   timelineEvents,
   ...engagementFeatures,
     ...glossary,
+     ...adsFeatures,
 } as const;
 
 export default zh;
